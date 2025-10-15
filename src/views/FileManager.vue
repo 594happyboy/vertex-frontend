@@ -3,11 +3,7 @@
     <div class="dashboard-shell">
       <header class="dashboard-header">
         <div class="header-left">
-          <span class="brand-icon">
-            <el-icon :size="28">
-              <FolderOpened />
-            </el-icon>
-          </span>
+          <span class="brand-icon">📁</span>
           <div class="brand-text">
             <h1>云端文件中心</h1>
             <p>集中管理日常文件资源，支持上传、下载与删除</p>
@@ -21,8 +17,7 @@
           <div class="stat-card">
             <span class="stat-label">当前时间</span>
             <span class="stat-value time">
-              <el-icon :size="16"><Clock /></el-icon>
-              {{ currentTime }}
+              🕐 {{ currentTime }}
             </span>
           </div>
         </div>
@@ -35,34 +30,15 @@
               <h2>上传文件</h2>
               <p>支持拖拽或点击上传，单个文件不超过 100MB</p>
             </div>
-            <el-button
-              type="primary"
-              text
-              :icon="Refresh"
-              @click="loadFileList"
-              :loading="loading"
-            >
-              刷新列表
-            </el-button>
           </div>
 
-          <el-upload
-            ref="uploadRef"
-            class="upload-dropzone"
-            drag
-            :auto-upload="false"
-            :show-file-list="false"
-            :on-change="handleFileChange"
-            :on-exceed="handleExceed"
-            :disabled="uploading"
-            :limit="1"
-          >
-            <div class="dropzone-content" :class="{ 'is-uploading': uploading }">
+          <div class="upload-dropzone" :class="{ 'is-uploading': uploading, 'is-dragover': isDragOver }"
+            @click="triggerFileInput" @drop.prevent="handleDrop" @dragover.prevent="handleDragOver"
+            @dragleave.prevent="handleDragLeave">
+            <input ref="fileInputRef" type="file" style="display: none" @change="handleFileInputChange" />
+            <div class="dropzone-content">
               <span class="dropzone-icon">
-                <el-icon :size="48">
-                  <UploadFilled v-if="!uploading" />
-                  <Upload v-else />
-                </el-icon>
+                {{ uploading ? '⬆️' : '📤' }}
               </span>
               <div class="dropzone-text">
                 <p class="title">
@@ -71,134 +47,149 @@
                 <p class="subtitle">文件将通过后端接口安全保存并可随时下载</p>
               </div>
             </div>
-          </el-upload>
+          </div>
 
           <div v-if="selectedFile" class="selected-file-card">
             <div>
               <span class="file-name" :title="selectedFile.name">{{ selectedFile.name }}</span>
               <span class="file-size">{{ formatFileSize(selectedFile.size) }}</span>
             </div>
-            <el-button link type="danger" @click="clearSelection">清除</el-button>
+            <button class="btn btn-link btn-danger" @click="clearSelection">清除</button>
           </div>
 
-          <el-button
-            class="upload-action"
-            type="primary"
-            size="large"
-            :loading="uploading"
-            :disabled="!selectedFile"
-            @click="uploadFile"
-          >
-            <el-icon class="action-icon"><Upload /></el-icon>
-            {{ uploading ? '正在上传…' : '开始上传' }}
-          </el-button>
+          <button class="btn btn-primary btn-large upload-action" :disabled="!selectedFile || uploading"
+            @click="uploadFile">
+            ⬆️ {{ uploading ? '正在上传…' : '开始上传' }}
+          </button>
         </section>
 
         <section class="panel list-panel">
           <div class="panel-header list-header">
+            <button class="btn btn-text" @click="loadFileList" :disabled="loading">
+              {{ loading ? '加载中...' : '刷新' }}
+            </button>
             <div>
               <h2>文件列表</h2>
               <p>显示后端提供的文件数据，可直接下载或删除</p>
             </div>
             <div class="toolbar">
-              <el-input
-                v-model="searchKeyword"
-                placeholder="搜索文件名..."
-                :prefix-icon="Search"
-                clearable
-                @clear="onSearch"
-                @keyup.enter="onSearch"
-                @change="onSearch"
-              />
+              <div class="search-input">
+                <span class="search-icon">🔍</span>
+                <input v-model="searchKeyword" type="text" placeholder="搜索文件名..." @keyup.enter="onSearch"
+                  @input="onSearch" />
+                <button v-if="searchKeyword" class="clear-btn" @click="searchKeyword = ''; onSearch()">
+                  ✕
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="table-wrapper" v-loading="loading">
-            <el-table
-              v-if="fileList.length > 0"
-              :data="fileList"
-              border
-              :header-cell-style="{ backgroundColor: '#f0f3ff', color: '#1f2f4a' }"
-            >
-              <el-table-column label="文件" min-width="260">
-                <template #default="{ row }">
-                  <div class="file-cell">
-                    <span class="file-cell-icon">
-                      <el-icon :size="20"><Document /></el-icon>
-                    </span>
-                    <div class="file-cell-info">
-                      <p class="name" :title="row.fileName">{{ row.fileName }}</p>
-                      <span class="type">{{ formatFileType(row.fileType) }}</span>
+          <div class="table-wrapper" :class="{ 'is-loading': loading }">
+            <div v-if="loading" class="loading-overlay">
+              <div class="spinner"></div>
+              <p>加载中...</p>
+            </div>
+
+            <table v-if="fileList.length > 0" class="data-table">
+              <thead>
+                <tr>
+                  <th>文件</th>
+                  <th width="120">大小</th>
+                  <th width="180">上传时间</th>
+                  <th width="180" align="center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in fileList" :key="row.id">
+                  <td>
+                    <div class="file-cell">
+                      <span class="file-cell-icon">📄</span>
+                      <div class="file-cell-info">
+                        <p class="name" :title="row.fileName">{{ row.fileName }}</p>
+                        <span class="type">{{ formatFileType(row.fileType) }}</span>
+                      </div>
                     </div>
-                  </div>
-                </template>
-              </el-table-column>
-              <el-table-column label="大小" width="120">
-                <template #default="{ row }">
-                  {{ row.fileSizeFormatted || formatFileSize(row.fileSize) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="上传时间" min-width="180">
-                <template #default="{ row }">
-                  {{ formatTime(row.uploadTime) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="180" fixed="right" align="center">
-                <template #default="{ row }">
-                  <el-button
-                    size="small"
-                    type="primary"
-                    :icon="Download"
-                    @click="downloadFile(row)"
-                  >
-                    下载
-                  </el-button>
-                  <el-button
-                    size="small"
-                    type="danger"
-                    :icon="Delete"
-                    @click="deleteFile(row)"
-                  >
-                    删除
-                  </el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-            <el-empty v-else description="暂无文件，快去上传吧" />
+                  </td>
+                  <td>{{ row.fileSizeFormatted || formatFileSize(row.fileSize) }}</td>
+                  <td>{{ formatTime(row.uploadTime) }}</td>
+                  <td align="center">
+                    <button class="btn btn-small btn-primary" @click="downloadFile(row)">
+                      ⬇️ 下载
+                    </button>
+                    <button class="btn btn-small btn-danger" @click="deleteFile(row)" style="margin-top: 5px;">
+                      🗑️ 删除
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div v-else-if="!loading" class="empty-state">
+              <div class="empty-icon">📭</div>
+              <p>暂无文件，快去上传吧</p>
+            </div>
           </div>
 
           <div class="pagination" v-if="total > 0">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :total="total"
-              :page-sizes="[10, 20, 50]"
-              background
-              layout="total, sizes, prev, pager, next"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-            />
+            <div class="pagination-info">
+              共 {{ total }} 条
+            </div>
+            <div class="pagination-size">
+              <select v-model.number="pageSize" @change="handleSizeChange">
+                <option :value="10">10 条/页</option>
+                <option :value="20">20 条/页</option>
+                <option :value="50">50 条/页</option>
+              </select>
+            </div>
+            <div class="pagination-controls">
+              <button class="btn btn-small" :disabled="currentPage === 1" @click="handleCurrentChange(currentPage - 1)">
+                上一页
+              </button>
+              <span class="page-number">{{ currentPage }} / {{ totalPages }}</span>
+              <button class="btn btn-small" :disabled="currentPage === totalPages"
+                @click="handleCurrentChange(currentPage + 1)">
+                下一页
+              </button>
+            </div>
           </div>
         </section>
       </main>
     </div>
+
+    <!-- Toast Message -->
+    <transition name="toast">
+      <div v-if="toast.show" class="toast" :class="`toast-${toast.type}`">
+        <span class="toast-icon">{{ getToastIcon(toast.type) }}</span>
+        <span class="toast-message">{{ toast.message }}</span>
+      </div>
+    </transition>
+
+    <!-- Confirm Dialog -->
+    <transition name="dialog">
+      <div v-if="dialog.show" class="dialog-overlay" @click="cancelDialog">
+        <div class="dialog-box" @click.stop>
+          <div class="dialog-header">
+            <h3>{{ dialog.title }}</h3>
+          </div>
+          <div class="dialog-body">
+            <p>{{ dialog.message }}</p>
+          </div>
+          <div class="dialog-footer">
+            <button class="btn btn-default" @click="cancelDialog">
+              取消
+            </button>
+            <button class="btn btn-danger" @click="confirmDialog">
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  UploadFilled,
-  Upload,
-  Download,
-  Delete,
-  Search,
-  Refresh,
-  Document,
-  FolderOpened,
-  Clock
-} from '@element-plus/icons-vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { fileApi } from '../api/file'
 
 const fileList = ref([])
@@ -210,8 +201,28 @@ const pageSize = ref(10)
 const total = ref(0)
 const searchKeyword = ref('')
 const currentTime = ref('')
-const uploadRef = ref(null)
+const fileInputRef = ref(null)
+const isDragOver = ref(false)
 let clockTimer = null
+
+// Toast state
+const toast = ref({
+  show: false,
+  message: '',
+  type: 'info'
+})
+
+// Dialog state
+const dialog = ref({
+  show: false,
+  title: '',
+  message: '',
+  onConfirm: null
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(total.value / pageSize.value) || 1
+})
 
 const getCurrentTime = () => {
   return new Date().toLocaleString('zh-CN', {
@@ -226,39 +237,95 @@ const updateClock = () => {
   currentTime.value = getCurrentTime()
 }
 
-// 居中显示的消息提示
+const getToastIcon = (type) => {
+  const icons = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️'
+  }
+  return icons[type] || icons.info
+}
+
 const showMessage = (message, type = 'info') => {
-  ElMessage.closeAll() // 关闭所有现有消息
-  ElMessage({
-    message,
-    type,
-    duration: type === 'error' ? 3000 : 2000,
-    showClose: true,
-    offset: 0, // 使用 CSS 固定定位，不需要 offset
-    grouping: true,
-    customClass: 'center-toast'
+  toast.value = { show: true, message, type }
+  setTimeout(() => {
+    toast.value.show = false
+  }, type === 'error' ? 3000 : 2000)
+}
+
+const showConfirm = (title, message) => {
+  return new Promise((resolve) => {
+    dialog.value = {
+      show: true,
+      title,
+      message,
+      onConfirm: () => {
+        dialog.value.show = false
+        resolve(true)
+      }
+    }
   })
 }
 
-const handleExceed = () => {
-  showMessage('一次仅支持上传一个文件，请先完成当前上传', 'warning')
+const cancelDialog = () => {
+  dialog.value.show = false
 }
 
-const handleFileChange = (file) => {
-  if (!file?.raw) return
-  if (file.raw.size > 100 * 1024 * 1024) {
+const confirmDialog = () => {
+  if (dialog.value.onConfirm) {
+    dialog.value.onConfirm()
+  }
+}
+
+const triggerFileInput = () => {
+  if (!uploading.value) {
+    fileInputRef.value?.click()
+  }
+}
+
+const handleFileInputChange = (event) => {
+  const file = event.target.files?.[0]
+  if (file) {
+    validateAndSetFile(file)
+  }
+}
+
+const handleDragOver = (event) => {
+  if (!uploading.value) {
+    isDragOver.value = true
+  }
+}
+
+const handleDragLeave = (event) => {
+  isDragOver.value = false
+}
+
+const handleDrop = (event) => {
+  isDragOver.value = false
+  if (uploading.value) return
+
+  const file = event.dataTransfer.files?.[0]
+  if (file) {
+    validateAndSetFile(file)
+  }
+}
+
+const validateAndSetFile = (file) => {
+  if (file.size > 100 * 1024 * 1024) {
     showMessage('单个文件大小不能超过 100MB', 'error')
-    uploadRef.value?.clearFiles()
     selectedFile.value = null
     return
   }
-  selectedFile.value = file.raw
+  selectedFile.value = file
   showMessage(`已选择 ${file.name}`, 'success')
 }
 
 const clearSelection = () => {
   selectedFile.value = null
-  uploadRef.value?.clearFiles()
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
   showMessage('已清除文件选择', 'info')
 }
 
@@ -312,8 +379,7 @@ const loadFileList = async () => {
   }
 }
 
-const handleSizeChange = (size) => {
-  pageSize.value = size
+const handleSizeChange = () => {
   currentPage.value = 1
   loadFileList()
 }
@@ -345,25 +411,82 @@ const formatFileType = (fileType) => {
   return fileType || '未知类型'
 }
 
-const downloadFile = (file) => {
-  const url = fileApi.download(file.id)
-  window.open(url, '_blank')
-  showMessage(`开始下载：${file.fileName}`, 'success')
+const downloadFile = async (file) => {
+  try {
+    showMessage(`正在下载：${file.fileName}`, 'info')
+
+    const axiosResponse = await fileApi.download(file.id)
+
+    // 处理可能返回的错误JSON（有些后端即便设置了blob也会返回JSON错误）
+    const isBlob = axiosResponse?.data instanceof Blob
+    if (!isBlob) {
+      const text = typeof axiosResponse === 'string' ? axiosResponse : JSON.stringify(axiosResponse)
+      throw new Error(text || '未知的下载响应')
+    }
+
+    // 从响应头提取文件名
+    const disposition = axiosResponse.headers?.['content-disposition'] || axiosResponse.headers?.['Content-Disposition']
+    let filename = file.fileName
+    if (disposition) {
+      const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(disposition)
+      const raw = match?.[1] || match?.[2]
+      if (raw) {
+        try {
+          filename = decodeURIComponent(raw)
+        } catch {
+          filename = raw
+        }
+      }
+    }
+
+    // 创建blob对象URL
+    const blob = axiosResponse.data
+    // 检测是否返回了错误的JSON blob（例如9B大小）
+    if (blob.size < 20) {
+      try {
+        const text = await blob.text()
+        // 如果能解析为JSON，展示后端错误信息
+        try {
+          const json = JSON.parse(text)
+          throw new Error(json.message || text)
+        } catch {
+          throw new Error(text)
+        }
+      } catch {
+        // ignore，按普通错误处理
+      }
+    }
+
+    const url = window.URL.createObjectURL(blob)
+
+    // 创建隐藏的<a>标签并触发下载
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+
+    // 清理
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    showMessage(`下载成功：${filename}`, 'success')
+  } catch (error) {
+    console.error('下载失败：', error)
+    const message = error?.message || error?.response?.statusText || '下载失败，请稍后重试'
+    showMessage(message, 'error')
+  }
 }
 
 const deleteFile = async (file) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认删除文件「${file.fileName}」？删除后无法恢复。`,
-      '删除确认',
-      {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonClass: 'el-button--danger'
-      }
-    )
+  const confirmed = await showConfirm(
+    '删除确认',
+    `确认删除文件「${file.fileName}」？删除后无法恢复。`
+  )
 
+  if (!confirmed) return
+
+  try {
     const response = await fileApi.delete(file.id)
     if (response.code === 200) {
       showMessage('删除成功', 'success')
@@ -372,9 +495,7 @@ const deleteFile = async (file) => {
       throw new Error(response.message || '删除失败')
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      showMessage(error.message ?? '删除失败，请稍后再试', 'error')
-    }
+    showMessage(error.message ?? '删除失败，请稍后再试', 'error')
   }
 }
 
@@ -392,6 +513,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
+
 .file-dashboard {
   min-height: 100vh;
   background: #eef2f8;
@@ -430,7 +555,7 @@ onUnmounted(() => {
   height: 56px;
   border-radius: 16px;
   background: rgba(58, 91, 229, 0.15);
-  color: #3a5be5;
+  font-size: 28px;
 }
 
 .brand-text h1 {
@@ -520,14 +645,100 @@ onUnmounted(() => {
   font-size: 13px;
 }
 
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f0f3f8;
+  color: #1f2f4a;
+}
+
+.btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3a5be5 0%, #5d7bff 100%);
+  color: white;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #f15b67 0%, #f88f7c 100%);
+  color: white;
+}
+
+.btn-default {
+  background: #f0f3f8;
+  color: #1f2f4a;
+}
+
+.btn-text {
+  background: transparent;
+  color: #3a5be5;
+  padding: 0 0;
+}
+
+.btn-link {
+  background: transparent;
+  color: #3a5be5;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+.btn-link.btn-danger {
+  color: #f15b67;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn-large {
+  padding: 12px 24px;
+  font-size: 15px;
+  height: 42px;
+}
+
+/* Upload Dropzone */
 .upload-dropzone {
   border-radius: 18px;
   overflow: hidden;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+  border: 2px dashed rgba(58, 91, 229, 0.35);
+  background: rgba(58, 91, 229, 0.06);
+  cursor: pointer;
 }
 
-.upload-dropzone:hover {
+.upload-dropzone:hover:not(.is-uploading) {
   transform: translateY(-4px);
+  border-color: rgba(58, 91, 229, 0.6);
+  background: rgba(58, 91, 229, 0.1);
+}
+
+.upload-dropzone.is-dragover {
+  border-color: rgba(58, 91, 229, 0.8);
+  background: rgba(58, 91, 229, 0.15);
+}
+
+.upload-dropzone.is-uploading {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .dropzone-content {
@@ -537,11 +748,6 @@ onUnmounted(() => {
   justify-content: center;
   padding: 36px 20px;
   gap: 12px;
-  transition: filter 0.3s ease;
-}
-
-.dropzone-content.is-uploading {
-  filter: grayscale(0.1) brightness(0.95);
 }
 
 .dropzone-icon {
@@ -552,10 +758,6 @@ onUnmounted(() => {
   height: 56px;
   border-radius: 50%;
   background: rgba(58, 91, 229, 0.1);
-  color: #3a5be5;
-}
-
-.dropzone-icon .el-icon {
   font-size: 28px;
 }
 
@@ -604,21 +806,9 @@ onUnmounted(() => {
 
 .upload-action {
   width: 100%;
-  height: 42px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 20px;
 }
 
-.action-icon {
-  margin-right: 6px;
-  font-size: 16px;
-}
-
+/* List Panel */
 .list-panel {
   min-height: 520px;
 }
@@ -631,11 +821,129 @@ onUnmounted(() => {
   min-width: 260px;
 }
 
+.search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input input {
+  width: 100%;
+  padding: 10px 36px 10px 36px;
+  border: 1px solid #dde3f0;
+  border-radius: 14px;
+  background: #f6f8ff;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.search-input input:focus {
+  border-color: #3a5be5;
+  background: white;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 16px;
+  color: #6c7a92;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #6c7a92;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 14px;
+  border-radius: 4px;
+}
+
+.clear-btn:hover {
+  background: #f0f3f8;
+}
+
+/* Table Styles */
 .table-wrapper {
+  position: relative;
   border-radius: 16px;
   overflow: hidden;
   background: #ffffff;
   border: 1px solid #e4e9f2;
+  min-height: 300px;
+}
+
+.table-wrapper.is-loading {
+  pointer-events: none;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  gap: 12px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f0f3f8;
+  border-top-color: #3a5be5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table thead {
+  background: #f0f3ff;
+}
+
+.data-table th {
+  padding: 14px 16px;
+  text-align: left;
+  color: #1f2f4a;
+  font-weight: 600;
+  border-bottom: 2px solid #e4e9f2;
+}
+
+.data-table th[align="center"] {
+  text-align: center;
+}
+
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f3f8;
+  color: #1f2f4a;
+}
+
+.data-table td[align="center"] {
+  text-align: center;
+}
+
+.data-table tbody tr:hover {
+  background: #f8f9ff;
 }
 
 .file-cell {
@@ -652,7 +960,7 @@ onUnmounted(() => {
   height: 38px;
   border-radius: 12px;
   background: #eef2ff;
-  color: #3a5be5;
+  font-size: 20px;
 }
 
 .file-cell-info {
@@ -660,7 +968,7 @@ onUnmounted(() => {
 }
 
 .file-cell-info .name {
-  margin: 0;
+  margin: 0 0 4px;
   font-weight: 600;
   color: #1f2f4a;
   white-space: nowrap;
@@ -673,12 +981,201 @@ onUnmounted(() => {
   color: #6c7a92;
 }
 
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #6c7a92;
+  font-size: 14px;
+}
+
+/* Pagination */
 .pagination {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
+.pagination-info {
+  font-size: 13px;
+  color: #6c7a92;
+}
+
+.pagination-size select {
+  padding: 6px 12px;
+  border: 1px solid #dde3f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-number {
+  padding: 0 12px;
+  font-size: 13px;
+  color: #1f2f4a;
+  font-weight: 500;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 100px;
+  transform: translateX(-50%);
+  min-width: 280px;
+  max-width: 420px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 8px 24px rgba(31, 47, 74, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 9999;
+  font-size: 14px;
+}
+
+.toast-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.toast-message {
+  flex: 1;
+}
+
+.toast-success {
+  background: #f0f9f4;
+  color: #22863a;
+  border: 1px solid #34d058;
+}
+
+.toast-error {
+  background: #ffeef0;
+  color: #d73a49;
+  border: 1px solid #f15b67;
+}
+
+.toast-warning {
+  background: #fffbf0;
+  color: #b08800;
+  border: 1px solid #ffdf5d;
+}
+
+.toast-info {
+  background: #f0f6ff;
+  color: #0366d6;
+  border: 1px solid #3a5be5;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
+
+/* Dialog */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.dialog-box {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  min-width: 420px;
+  max-width: 90vw;
+}
+
+.dialog-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e4e9f2;
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #1f2f4a;
+  font-weight: 600;
+}
+
+.dialog-body {
+  padding: 20px 24px;
+}
+
+.dialog-body p {
+  margin: 0;
+  font-size: 14px;
+  color: #5b6b84;
+  line-height: 1.6;
+}
+
+.dialog-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e4e9f2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-enter-active,
+.dialog-leave-active {
+  transition: all 0.3s ease;
+}
+
+.dialog-enter-from,
+.dialog-leave-to {
+  opacity: 0;
+}
+
+.dialog-enter-from .dialog-box,
+.dialog-leave-to .dialog-box {
+  transform: scale(0.9);
+}
+
+/* Responsive */
 @media (max-width: 1080px) {
   .dashboard-main {
     grid-template-columns: 1fr;
@@ -712,118 +1209,9 @@ onUnmounted(() => {
   .pagination {
     justify-content: center;
   }
-}
 
-:deep(.upload-dropzone .el-upload-dragger) {
-  border: 2px dashed rgba(58, 91, 229, 0.35);
-  background: rgba(58, 91, 229, 0.06);
-  transition: all 0.3s ease;
-}
-
-:deep(.upload-dropzone .el-upload-dragger:hover) {
-  border-color: rgba(58, 91, 229, 0.6);
-  background: rgba(58, 91, 229, 0.1);
-}
-
-:deep(.el-table) {
-  font-size: 13px;
-}
-
-:deep(.el-table .cell) {
-  color: #1f2f4a;
-}
-
-:deep(.el-button--primary) {
-  background: linear-gradient(135deg, #3a5be5 0%, #5d7bff 100%);
-  border: none;
-}
-
-:deep(.el-button--danger) {
-  background: linear-gradient(135deg, #f15b67 0%, #f88f7c 100%);
-  border: none;
-}
-
-:deep(.el-pagination.is-background .el-pager li.is-active) {
-  background: linear-gradient(135deg, #3a5be5 0%, #5d7bff 100%);
-  border: none;
-}
-
-:deep(.el-input__wrapper) {
-  background: #f6f8ff;
-  box-shadow: none;
-  border-radius: 14px;
-}
-
-:deep(.el-empty__description) {
-  color: #6c7a92;
-}
-
-/* 居中消息提示样式 - 使用全局样式覆盖 */
-</style>
-
-<style>
-/* 全局样式：消息提示居中显示 */
-.el-message.center-toast {
-  position: fixed !important;
-  left: 50% !important;
-  right: auto !important;
-  top: 100px !important;
-  transform: translateX(-50%) !important;
-  margin: 0 !important;
-  min-width: 280px;
-  max-width: 420px;
-  min-height: auto !important;
-  max-height: 80px !important;
-  border-radius: 12px;
-  padding: 10px 18px !important;
-  box-shadow: 0 8px 24px rgba(31, 47, 74, 0.15);
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  z-index: 9999 !important;
-  display: flex !important;
-  align-items: center !important;
-}
-
-.el-message.center-toast .el-message__content {
-  text-align: center;
-  font-size: 13px !important;
-  line-height: 1.4 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* 强制限制消息图标大小 */
-.el-message.center-toast .el-message__icon {
-  font-size: 16px !important;
-  width: 16px !important;
-  height: 16px !important;
-  line-height: 16px !important;
-  margin-right: 8px !important;
-}
-
-.el-message.center-toast .el-message__icon svg {
-  width: 16px !important;
-  height: 16px !important;
-}
-
-/* 调整关闭按钮大小 */
-.el-message.center-toast .el-message__closeBtn {
-  font-size: 14px !important;
-  width: 14px !important;
-  height: 14px !important;
-  line-height: 14px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  padding: 0 !important;
-}
-
-.el-message.center-toast .el-message__closeBtn:hover {
-  opacity: 0.7;
-}
-
-/* 防止消息出现时页面抖动 */
-html {
-  overflow-y: scroll;
+  .dialog-box {
+    min-width: 90vw;
+  }
 }
 </style>
-

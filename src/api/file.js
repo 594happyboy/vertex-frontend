@@ -20,7 +20,9 @@ export const fileApi = {
 
   // 下载文件
   download(id) {
-    return `/api/files/${id}/download`
+    return request.get(`/files/${id}/download`, {
+      responseType: 'blob'  // 重要：告诉axios以blob格式接收响应
+    })
   },
 
   // 删除文件
