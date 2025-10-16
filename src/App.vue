@@ -1,24 +1,19 @@
 <template>
-  <div id="app">
-    <FileManager />
-  </div>
+  <router-view />
 </template>
 
 <script setup>
-import FileManager from './views/FileManager.vue'
+import { onMounted } from 'vue'
+import { useAuthStore } from './stores/auth'
+
+const authStore = useAuthStore()
+
+onMounted(() => {
+  // 初始化认证状态
+  authStore.initAuth()
+})
 </script>
 
 <style>
-#app {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
-  min-height: 100vh;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-}
+/* 全局样式已在 tokens.css 中定义 */
 </style>

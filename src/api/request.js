@@ -9,10 +9,14 @@ const request = axios.create({
   }
 })
 
-// 请求拦截器（类似OkHttp Interceptor）
+// 请求拦截器 - 添加认证token
 request.interceptors.request.use(
   config => {
-    console.log('请求:', config.url)
+    // 从 localStorage 获取 token
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
     return config
   },
   error => {
@@ -20,18 +24,28 @@ request.interceptors.request.use(
   }
 )
 
-// 响应拦截器
+// 响应拦截器 - 统一处理响应和错误
 request.interceptors.response.use(
   response => {
-    // 对于文件下载（blob），根据请求配置判断并返回原始响应以保留headers等信息
+    // 对于文件下载（blob），返回完整响应
     if (response.config && response.config.responseType === 'blob') {
-      return response // 保留完整AxiosResponse
+      return response
     }
-    // 其他情况保持原来的行为
+    // 返回响应数据
     return response.data
   },
   error => {
-    console.error('请求失败:', error)
+    // 处理认证错误
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+    }
+    
+    // 统一错误提示
+    const message = error.response?.data?.message || error.message || '请求失败'
+    console.error('API错误:', message)
+    
     return Promise.reject(error)
   }
 )
