@@ -10,15 +10,6 @@ export function login(data) {
 }
 
 /**
- * 获取游客令牌
- * @param {Object} data - { targetUser?: string }
- * @returns {Promise<{ visitorToken: string, targetUser: Object }>}
- */
-export function getVisitorToken(data = {}) {
-  return request.post('/api/auth/visitor', data);
-}
-
-/**
  * 刷新令牌
  * @param {string} refreshToken
  * @returns {Promise<{ accessToken: string }>}

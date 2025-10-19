@@ -22,7 +22,7 @@
       </div>
 
       <div class="header-right">
-        <button class="btn-icon" @click="handleCreateNew" title="新建" :disabled="isReadOnly">
+        <button class="btn-icon" @click="handleCreateNew" title="新建">
           <Icon icon="mdi:plus" />
         </button>
         <button class="btn-icon" @click="toggleTheme" title="切换主题">
@@ -36,7 +36,7 @@
           <div v-if="showUserMenu" class="user-dropdown">
             <div class="user-info">
               <div class="user-name">{{ currentUsername }}</div>
-              <div class="user-role">{{ isVisitor ? '游客' : '管理员' }}</div>
+              <div class="user-role">管理员</div>
             </div>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item" @click="handleLogout">
@@ -88,9 +88,7 @@ const searchKeyword = ref('');
 const showUserMenu = ref(false);
 const showCreateDialog = ref(false);
 
-const currentUsername = computed(() => authStore.user?.username || '游客');
-const isVisitor = computed(() => authStore.isVisitor);
-const isReadOnly = computed(() => authStore.isReadOnly());
+const currentUsername = computed(() => authStore.user?.username || '用户');
 const isDark = computed(() => uiStore.isDark);
 const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
 
@@ -110,7 +108,6 @@ function handleSearch() {
 
 // 新建
 function handleCreateNew() {
-  if (isReadOnly.value) return;
   showCreateDialog.value = true;
 }
 

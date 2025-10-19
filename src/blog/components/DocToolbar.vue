@@ -9,7 +9,7 @@
     <div class="toolbar-right">
       <!-- 编辑/预览切换 -->
       <button
-        v-if="canEdit && !isReadOnly"
+        v-if="canEdit"
         class="btn-toolbar"
         @click="toggleMode"
       >
@@ -19,7 +19,7 @@
 
       <!-- 保存按钮 -->
       <button
-        v-if="!isReadOnly && isEditing"
+        v-if="isEditing"
         class="btn-toolbar btn-primary"
         @click="handleSave"
         :disabled="saving || !dirty"
@@ -30,7 +30,6 @@
 
       <!-- 发布/取消发布 -->
       <button
-        v-if="!isReadOnly"
         class="btn-toolbar"
         :class="{ 'btn-success': !isPublished }"
         @click="togglePublish"
@@ -50,7 +49,7 @@
             <span>导出</span>
           </button>
           <div class="menu-divider"></div>
-          <button v-if="!isReadOnly" class="menu-item danger" @click="handleDelete">
+          <button class="menu-item danger" @click="handleDelete">
             <Icon icon="mdi:delete" />
             <span>删除</span>
           </button>
@@ -63,12 +62,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Icon } from '@iconify/vue';
-import { useAuthStore } from '../stores/auth';
 import { useDocStore } from '../stores/doc';
 import { useTreeStore } from '../stores/tree';
 import { useUiStore } from '../stores/ui';
 
-const authStore = useAuthStore();
 const docStore = useDocStore();
 const treeStore = useTreeStore();
 const uiStore = useUiStore();
@@ -81,7 +78,6 @@ const canEdit = computed(() => docStore.canEdit);
 const dirty = computed(() => docStore.dirty);
 const saving = computed(() => docStore.saving);
 const isPublished = computed(() => docStore.isPublished);
-const isReadOnly = computed(() => authStore.isReadOnly());
 
 function toggleMode() {
   if (dirty.value) {
@@ -154,7 +150,7 @@ function handleClickOutside(event) {
 function handleKeyDown(event) {
   if ((event.ctrlKey || event.metaKey) && event.key === 's') {
     event.preventDefault();
-    if (isEditing.value && !isReadOnly.value) {
+    if (isEditing.value) {
       handleSave();
     }
   }

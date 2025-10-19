@@ -12,7 +12,7 @@
       </button>
       <Icon class="node-icon" icon="mdi:folder" />
       <span class="node-label">{{ node.name }}</span>
-      <div v-if="!readOnly" class="node-actions">
+      <div class="node-actions">
         <button class="action-btn" @click.stop="handleCreateGroup" title="新建子分组">
           <Icon icon="mdi:folder-plus" />
         </button>
@@ -42,7 +42,7 @@
       />
       <span class="node-label">{{ node.name }}</span>
       <span v-if="node.status === 'published'" class="node-badge">已发布</span>
-      <div v-if="!readOnly" class="node-actions">
+      <div class="node-actions">
         <button class="action-btn" @click.stop="handleRename" title="重命名">
           <Icon icon="mdi:pencil" />
         </button>
@@ -60,7 +60,6 @@
         :node="child"
         :selected-id="selectedId"
         :expanded-keys="expandedKeys"
-        :read-only="readOnly"
         @select="(node, type) => $emit('select', node, type)"
         @toggle="(id) => $emit('toggle', id)"
         @create-group="(id) => $emit('create-group', id)"
@@ -88,10 +87,6 @@ const props = defineProps({
   expandedKeys: {
     type: Array,
     default: () => [],
-  },
-  readOnly: {
-    type: Boolean,
-    default: false,
   },
 });
 

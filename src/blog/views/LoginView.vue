@@ -43,18 +43,6 @@
           <span v-if="loading">登录中...</span>
           <span v-else>登 录</span>
         </button>
-
-        <div class="divider">
-          <span>或</span>
-        </div>
-
-        <button
-          class="btn btn-secondary btn-block"
-          @click="handleVisitorLogin"
-          :disabled="loading"
-        >
-          游客访问
-        </button>
       </div>
     </div>
   </div>
@@ -110,27 +98,6 @@ async function handleLogin() {
     router.push(redirectPath);
   } catch (err) {
     error.value = err.message || '登录失败，请检查用户名和密码';
-  } finally {
-    loading.value = false;
-  }
-}
-
-// 游客登录
-async function handleVisitorLogin() {
-  if (loading.value) return;
-
-  error.value = '';
-  loading.value = true;
-
-  try {
-    await authStore.loginAsVisitor();
-    uiStore.showInfo('以游客身份进入（仅可查看已发布内容）');
-    
-    // 游客登录后也支持重定向
-    const redirectPath = getRedirectPath();
-    router.push(redirectPath);
-  } catch (err) {
-    error.value = err.message || '游客访问失败';
   } finally {
     loading.value = false;
   }
@@ -259,26 +226,6 @@ async function handleVisitorLogin() {
 
 .btn-block {
   width: 100%;
-}
-
-.divider {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: var(--color-text-tertiary);
-  font-size: var(--text-sm);
-  margin: var(--spacing-md) 0;
-}
-
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.divider span {
-  padding: 0 var(--spacing-md);
 }
 </style>
 

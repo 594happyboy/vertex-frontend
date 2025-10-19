@@ -19,13 +19,9 @@ request.interceptors.request.use(
   (config) => {
     // 自动注入 token
     const accessToken = localStorage.getItem('accessToken');
-    const visitorToken = localStorage.getItem('visitorToken');
     
-    // 优先使用 accessToken
-    const token = accessToken || visitorToken;
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     
     return config;
@@ -42,18 +38,12 @@ request.interceptors.response.use(
     // 检查响应头中是否有新Token（后端在Token剩余时间<30分钟时会返回）
     const newToken = response.headers['x-new-token'];
     if (newToken) {
-      // 判断当前使用的是哪种Token
       const accessToken = localStorage.getItem('accessToken');
-      const visitorToken = localStorage.getItem('visitorToken');
       
       if (accessToken) {
-        // 如果是管理员Token，更新accessToken
+        // 更新accessToken
         localStorage.setItem('accessToken', newToken);
         console.log('✅ AccessToken已自动刷新');
-      } else if (visitorToken) {
-        // 如果是游客Token，更新visitorToken
-        localStorage.setItem('visitorToken', newToken);
-        console.log('✅ VisitorToken已自动刷新');
       }
     }
     

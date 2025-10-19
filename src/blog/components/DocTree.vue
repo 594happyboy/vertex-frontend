@@ -3,7 +3,6 @@
     <div class="tree-header">
       <h3>目录</h3>
       <button
-        v-if="!isReadOnly"
         class="btn-icon-sm"
         @click="handleCreateGroup(null)"
         title="新建分组"
@@ -26,7 +25,7 @@
       <div v-else-if="tree.length === 0" class="tree-empty">
         <Icon icon="mdi:folder-open-outline" />
         <p>暂无分组</p>
-        <button v-if="!isReadOnly" class="btn-sm btn-primary" @click="handleCreateGroup(null)">
+        <button class="btn-sm btn-primary" @click="handleCreateGroup(null)">
           创建第一个分组
         </button>
       </div>
@@ -38,7 +37,6 @@
           :node="node"
           :selected-id="selectedId"
           :expanded-keys="expandedKeys"
-          :read-only="isReadOnly"
           @select="handleSelect"
           @toggle="handleToggle"
           @create-group="handleCreateGroup"
@@ -54,18 +52,15 @@
 <script setup>
 import { computed } from 'vue';
 import { Icon } from '@iconify/vue';
-import { useAuthStore } from '../stores/auth';
 import { useTreeStore } from '../stores/tree';
 import { useDocStore } from '../stores/doc';
 import { useUiStore } from '../stores/ui';
 import TreeNode from './TreeNode.vue';
 
-const authStore = useAuthStore();
 const treeStore = useTreeStore();
 const docStore = useDocStore();
 const uiStore = useUiStore();
 
-const isReadOnly = computed(() => authStore.isReadOnly());
 const tree = computed(() => treeStore.tree);
 const loading = computed(() => treeStore.loading);
 const error = computed(() => treeStore.error);
