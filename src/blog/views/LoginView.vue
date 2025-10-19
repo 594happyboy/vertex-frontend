@@ -36,7 +36,7 @@
         </div>
 
         <button
-          class="btn btn-primary btn-block"
+          class="btn btn-primary btn-login"
           @click="handleLogin"
           :disabled="loading || !canSubmit"
         >
@@ -224,7 +224,8 @@ async function handleLogin() {
   background-color: var(--color-bg-hover);
 }
 
-.btn-block {
+.btn-login {
+  margin-top: 20px;
   width: 100%;
 }
 </style>

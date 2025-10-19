@@ -62,7 +62,7 @@
     </div>
 
     <!-- 新建对话框 -->
-    <CreateDialog v-if="showCreateDialog" @close="showCreateDialog = false" />
+    <CreateDialog v-if="showCreateDialog" @close="showCreateDialog = false"/>
   </div>
 </template>
 

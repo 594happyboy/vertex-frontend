@@ -10,14 +10,6 @@
 
       <div class="dialog-body">
         <div class="create-options">
-          <button class="create-option" @click="handleCreate('group')">
-            <Icon icon="mdi:folder-plus" class="option-icon" />
-            <div class="option-content">
-              <div class="option-title">新建分组</div>
-              <div class="option-desc">创建一个文档分组</div>
-            </div>
-          </button>
-
           <button class="create-option" @click="handleCreate('md')">
             <Icon icon="mdi:file-document-plus" class="option-icon" />
             <div class="option-content">
@@ -100,14 +92,7 @@ const uploading = ref(false);
 
 async function handleCreate(type) {
   try {
-    if (type === 'group') {
-      emit('close');
-      const name = prompt('请输入分组名称：');
-      if (!name || !name.trim()) return;
-      
-      await treeStore.createGroup(name.trim());
-      uiStore.showSuccess('分组创建成功');
-    } else if (type === 'md') {
+    if (type === 'md') {
       emit('close');
       const title = prompt('请输入文档标题：');
       if (!title || !title.trim()) return;
@@ -308,10 +293,13 @@ defineExpose({
 .dialog {
   width: 90%;
   max-width: 500px;
+  max-height: 90vh;
   background-color: var(--color-bg-primary);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .dialog-header {
@@ -320,6 +308,7 @@ defineExpose({
   justify-content: space-between;
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .dialog-header h3 {
@@ -347,6 +336,9 @@ defineExpose({
 
 .dialog-body {
   padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .create-options {
