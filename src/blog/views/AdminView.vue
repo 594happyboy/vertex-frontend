@@ -6,7 +6,7 @@
         <button class="btn-icon" @click="toggleSidebar" title="切换侧边栏">
           <Icon icon="mdi:menu" />
         </button>
-        <h1 class="app-title">小男孩的博客</h1>
+        <h1 class="app-title">小男孩的空间</h1>
       </div>
 
       <div class="header-center">
