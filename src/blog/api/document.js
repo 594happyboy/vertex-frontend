@@ -20,7 +20,7 @@ export function getDocument(id) {
 
 /**
  * 创建文档
- * @param {Object} data - { title, type, groupId?, contentMd? }
+ * @param {Object} data - { title, type, groupId?, contentMd?, fileId? }
  * @returns {Promise<Object>}
  */
 export function createDocument(data) {
@@ -53,5 +53,27 @@ export function deleteDocument(id) {
  */
 export function sortDocuments(items) {
   return request.post('/api/sort/documents', { items });
+}
+
+/**
+ * 批量上传文档（ZIP压缩包）
+ * @param {File} file - ZIP文件
+ * @param {number} parentGroupId - 父分组ID，可选
+ * @returns {Promise<Object>}
+ */
+export function batchUploadDocuments(file, parentGroupId = null) {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (parentGroupId !== null) {
+    formData.append('parentGroupId', parentGroupId);
+  }
+  
+  return request.post('/api/documents/batch-upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    // 超时时间设置为5分钟，因为批量上传可能需要较长时间
+    timeout: 300000,
+  });
 }
 

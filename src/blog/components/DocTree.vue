@@ -41,25 +41,40 @@
           @toggle="handleToggle"
           @create-group="handleCreateGroup"
           @create-doc="handleCreateDoc"
+          @batch-import="handleBatchImport"
           @rename="handleRename"
           @delete="handleDelete"
         />
       </div>
     </div>
+
+    <!-- 隐藏的文件选择器用于批量导入 -->
+    <input
+      ref="batchInputRef"
+      type="file"
+      accept=".zip"
+      style="display: none"
+      @change="handleBatchFileSelect"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { Icon } from '@iconify/vue';
 import { useTreeStore } from '../stores/tree';
 import { useDocStore } from '../stores/doc';
 import { useUiStore } from '../stores/ui';
+import { batchUploadDocuments } from '../api/document';
 import TreeNode from './TreeNode.vue';
 
 const treeStore = useTreeStore();
 const docStore = useDocStore();
 const uiStore = useUiStore();
+
+const batchInputRef = ref(null);
+const currentGroupId = ref(null);
+const uploading = ref(false);
 
 const tree = computed(() => treeStore.tree);
 const loading = computed(() => treeStore.loading);
@@ -157,11 +172,84 @@ async function handleDelete(node, type) {
       uiStore.showSuccess('分组删除成功');
     } else {
       await docStore.deleteDoc(node.id);
-      await treeStore.fetchTree();
+      await treeStore.fetchTree(); // 会自动检查并关闭不存在的文档
       uiStore.showSuccess('文档删除成功');
     }
   } catch (error) {
     uiStore.showError(error.message || '删除失败');
+  }
+}
+
+// 批量导入
+function handleBatchImport(groupId) {
+  currentGroupId.value = groupId;
+  batchInputRef.value?.click();
+}
+
+// 处理批量导入文件选择
+async function handleBatchFileSelect(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  // 重置input
+  event.target.value = '';
+
+  if (uploading.value) return;
+
+  // 验证文件类型
+  if (!file.name.toLowerCase().endsWith('.zip')) {
+    uiStore.showError('请选择 ZIP 格式的压缩包');
+    return;
+  }
+
+  // 验证文件大小（最大100MB）
+  const maxSize = 100 * 1024 * 1024;
+  if (file.size > maxSize) {
+    uiStore.showError('文件大小超过限制（最大100MB）');
+    return;
+  }
+
+  try {
+    uploading.value = true;
+    
+    // 显示上传提示
+    uiStore.showInfo('正在上传压缩包，请稍候...');
+
+    // 调用批量上传API
+    const result = await batchUploadDocuments(file, currentGroupId.value);
+    
+    // 刷新文档树
+    await treeStore.fetchTree();
+    
+    // 展开目标分组
+    if (currentGroupId.value) {
+      treeStore.expandNode(currentGroupId.value);
+    }
+    
+    // 显示结果
+    const { totalFiles, totalFolders, successCount, failedCount, items } = result;
+    
+    if (failedCount === 0) {
+      uiStore.showSuccess(
+        `批量导入成功！共导入 ${totalFolders} 个分组，${successCount} 个文档`
+      );
+    } else {
+      // 显示详细的失败信息
+      const failedItems = items.filter(item => !item.success);
+      const failedMsg = failedItems.slice(0, 5).map(item => `${item.name}: ${item.message}`).join('\n');
+      const moreMsg = failedItems.length > 5 ? `\n...还有${failedItems.length - 5}个失败` : '';
+      
+      uiStore.showError(
+        `部分导入失败！成功：${successCount}，失败：${failedCount}\n${failedMsg}${moreMsg}`
+      );
+    }
+    
+  } catch (error) {
+    console.error('Batch upload error:', error);
+    uiStore.showError(error.message || '批量导入失败');
+  } finally {
+    uploading.value = false;
+    currentGroupId.value = null;
   }
 }
 </script>

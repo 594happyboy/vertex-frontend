@@ -19,6 +19,9 @@
         <button class="action-btn" @click.stop="handleCreateDoc" title="新建文档">
           <Icon icon="mdi:file-document-plus" />
         </button>
+        <button class="action-btn" @click.stop="handleBatchImport" title="批量导入">
+          <Icon icon="mdi:folder-zip" />
+        </button>
         <button class="action-btn" @click.stop="handleRename" title="重命名">
           <Icon icon="mdi:pencil" />
         </button>
@@ -64,6 +67,7 @@
         @toggle="(id) => $emit('toggle', id)"
         @create-group="(id) => $emit('create-group', id)"
         @create-doc="(id) => $emit('create-doc', id)"
+        @batch-import="(id) => $emit('batch-import', id)"
         @rename="(node, type) => $emit('rename', node, type)"
         @delete="(node, type) => $emit('delete', node, type)"
       />
@@ -95,6 +99,7 @@ const emit = defineEmits([
   'toggle',
   'create-group',
   'create-doc',
+  'batch-import',
   'rename',
   'delete',
 ]);
@@ -121,6 +126,10 @@ function handleCreateGroup() {
 
 function handleCreateDoc() {
   emit('create-doc', props.node.id);
+}
+
+function handleBatchImport() {
+  emit('batch-import', props.node.id);
 }
 
 function handleRename() {

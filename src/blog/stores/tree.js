@@ -7,6 +7,7 @@ import {
   sortGroups as apiSortGroups,
 } from '../api/group';
 import { sortDocuments as apiSortDocuments } from '../api/document';
+import { useDocStore } from './doc';
 
 export const useTreeStore = defineStore('tree', {
   state: () => ({
@@ -71,6 +72,22 @@ export const useTreeStore = defineStore('tree', {
   },
 
   actions: {
+    // 检查文档是否存在于树中
+    documentExistsInTree(docId) {
+      const found = this.findNodeById(docId, 'DOCUMENT');
+      return !!found;
+    },
+
+    // 检查并关闭不存在的文档
+    checkAndCloseDoc() {
+      const docStore = useDocStore();
+      if (docStore.currentDoc && !this.documentExistsInTree(docStore.currentDoc.id)) {
+        docStore.closeDoc();
+        this.selectedId = null;
+        this.selectedType = null;
+      }
+    },
+
     // 加载完整目录树
     async fetchTree() {
       this.loading = true;
@@ -81,6 +98,9 @@ export const useTreeStore = defineStore('tree', {
         const data = response.data || response;
         this.tree = data.tree || [];
         this.cached = data.cached || false;
+        
+        // 检查当前打开的文档是否还存在
+        this.checkAndCloseDoc();
       } catch (error) {
         this.error = error.message;
         console.error('Failed to fetch directory tree:', error);
@@ -118,7 +138,7 @@ export const useTreeStore = defineStore('tree', {
     async deleteGroup(id) {
       try {
         await apiDeleteGroup(id);
-        await this.fetchTree(); // 重新加载树
+        await this.fetchTree(); // 重新加载树（会自动检查并关闭不存在的文档）
       } catch (error) {
         console.error('Failed to delete group:', error);
         throw error;

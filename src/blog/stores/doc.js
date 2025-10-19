@@ -63,6 +63,28 @@ export const useDocStore = defineStore('doc', {
       }
     },
 
+    // 创建带文件关联的文档
+    async createDocWithFile(title, type, fileId, contentMd = '', groupId = null) {
+      try {
+        const data = await apiCreateDocument({
+          title,
+          type,
+          groupId,
+          contentMd,
+          fileId, // 关联上传的文件
+        });
+        this.currentDoc = data;
+        this.content = data.contentMd || '';
+        // 如果是PDF，查看模式；如果是Markdown，编辑模式
+        this.mode = type === 'pdf' ? 'view' : 'edit';
+        this.dirty = false;
+        return data;
+      } catch (error) {
+        console.error('Failed to create document with file:', error);
+        throw error;
+      }
+    },
+
     // 保存文档
     async saveDoc(updates = {}) {
       if (!this.currentDoc) return;
