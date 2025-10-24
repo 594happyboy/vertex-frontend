@@ -26,11 +26,19 @@
             </div>
           </button>
 
+          <button class="create-option" @click="handleCreate('txt')" :disabled="uploading">
+            <Icon icon="mdi:file-document" class="option-icon" />
+            <div class="option-content">
+              <div class="option-title">TXT 文档</div>
+              <div class="option-desc">创建纯文本文档</div>
+            </div>
+          </button>
+
           <button class="create-option" @click="handleCreate('import')" :disabled="uploading">
             <Icon icon="mdi:file-import" class="option-icon" />
             <div class="option-content">
               <div class="option-title">导入文件</div>
-              <div class="option-desc">{{ uploading ? '上传中...' : '导入本地 Markdown 或 PDF' }}</div>
+              <div class="option-desc">{{ uploading ? '上传中...' : '导入本地 Markdown、PDF 或 TXT' }}</div>
             </div>
           </button>
 
@@ -56,7 +64,7 @@
     <input
       ref="importInputRef"
       type="file"
-      accept=".md,.pdf"
+      accept=".md,.pdf,.txt"
       style="display: none"
       @change="handleImportSelect"
     />
@@ -76,7 +84,6 @@ import { Icon } from '@iconify/vue';
 import { useTreeStore } from '../stores/tree';
 import { useDocStore } from '../stores/doc';
 import { useUiStore } from '../stores/ui';
-import { uploadFile } from '../api/file';
 import { batchUploadDocuments } from '../api/document';
 
 const emit = defineEmits(['close']);
@@ -97,10 +104,29 @@ async function handleCreate(type) {
       const title = prompt('请输入文档标题：');
       if (!title || !title.trim()) return;
       
-      const doc = await docStore.createDoc(title.trim(), 'md');
+      // 创建空的Markdown文件
+      const initialContent = `# ${title}\n\n开始编写你的文档...`;
+      const blob = new Blob([initialContent], { type: 'text/markdown' });
+      const file = new File([blob], `${title}.md`, { type: 'text/markdown' });
+      
+      const doc = await docStore.createDoc(title.trim(), file);
       await treeStore.fetchTree();
       treeStore.selectNode(doc.id, 'document');
-      uiStore.showSuccess('文档创建成功');
+      uiStore.showSuccess('Markdown 文档创建成功');
+    } else if (type === 'txt') {
+      emit('close');
+      const title = prompt('请输入文档标题：');
+      if (!title || !title.trim()) return;
+      
+      // 创建空的TXT文件
+      const initialContent = '';
+      const blob = new Blob([initialContent], { type: 'text/plain' });
+      const file = new File([blob], `${title}.txt`, { type: 'text/plain' });
+      
+      const doc = await docStore.createDoc(title.trim(), file);
+      await treeStore.fetchTree();
+      treeStore.selectNode(doc.id, 'document');
+      uiStore.showSuccess('TXT 文档创建成功');
     } else if (type === 'pdf') {
       // 触发PDF文件选择
       pdfInputRef.value?.click();
@@ -124,7 +150,7 @@ async function handlePdfSelect(event) {
   // 重置input，允许重复选择同一个文件
   event.target.value = '';
 
-  await uploadDocument(file, 'pdf');
+  await uploadDocument(file);
 }
 
 // 处理导入文件选择
@@ -139,21 +165,16 @@ async function handleImportSelect(event) {
   const fileName = file.name;
   const fileExt = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
   
-  let docType = '';
-  if (fileExt === '.md') {
-    docType = 'md';
-  } else if (fileExt === '.pdf') {
-    docType = 'pdf';
-  } else {
-    uiStore.showError('不支持的文件格式，仅支持 .md 和 .pdf');
+  if (fileExt !== '.md' && fileExt !== '.pdf' && fileExt !== '.txt') {
+    uiStore.showError('不支持的文件格式，仅支持 .md、.pdf 和 .txt');
     return;
   }
 
-  await uploadDocument(file, docType);
+  await uploadDocument(file);
 }
 
 // 上传文档（通用方法）
-async function uploadDocument(file, docType) {
+async function uploadDocument(file) {
   if (uploading.value) return;
 
   try {
@@ -163,45 +184,26 @@ async function uploadDocument(file, docType) {
     // 显示上传提示
     uiStore.showInfo('文件上传中，请稍候...');
 
-    // 1. 上传文件到服务器
-    const fileData = await uploadFile(file);
-    
-    // 2. 从文件名提取标题（去除扩展名）
+    // 从文件名提取标题（去除扩展名）
     const fileName = file.name;
     const title = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
 
-    // 3. 创建文档记录
-    let doc;
-    if (docType === 'md') {
-      // 对于Markdown文件，需要读取内容
-      const content = await readFileAsText(file);
-      doc = await docStore.createDocWithFile(title, docType, fileData.id, content);
-    } else {
-      // 对于PDF文件，只需要关联文件ID
-      doc = await docStore.createDocWithFile(title, docType, fileData.id);
-    }
+    // 创建文档（新版API统一使用文件上传）
+    const doc = await docStore.createDoc(title, file);
 
-    // 4. 刷新树并选中新文档
+    // 刷新树并选中新文档
     await treeStore.fetchTree();
     treeStore.selectNode(doc.id, 'document');
     
-    uiStore.showSuccess(`${docType === 'md' ? 'Markdown' : 'PDF'} 文档导入成功`);
+    const fileExt = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+    const docTypeName = fileExt === '.md' ? 'Markdown' : (fileExt === '.pdf' ? 'PDF' : 'TXT');
+    uiStore.showSuccess(`${docTypeName} 文档导入成功`);
   } catch (error) {
     console.error('Upload error:', error);
     uiStore.showError(error.message || '文件上传失败');
   } finally {
     uploading.value = false;
   }
-}
-
-// 读取文件内容为文本
-function readFileAsText(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.onerror = reject;
-    reader.readAsText(file, 'UTF-8');
-  });
 }
 
 // 处理批量导入文件选择

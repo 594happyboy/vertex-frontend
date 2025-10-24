@@ -3,6 +3,7 @@ import {
   getDocument,
   createDocument as apiCreateDocument,
   updateDocument as apiUpdateDocument,
+  updateDocumentFile as apiUpdateDocumentFile,
   deleteDocument as apiDeleteDocument,
 } from '../api/document';
 
@@ -19,19 +20,44 @@ export const useDocStore = defineStore('doc', {
 
   getters: {
     isEditing: (state) => state.mode === 'edit',
-    canEdit: (state) => state.currentDoc && state.currentDoc.type === 'md',
+    canEdit: (state) => state.currentDoc && (state.currentDoc.type === 'md' || state.currentDoc.type === 'txt'),
     docTitle: (state) => state.currentDoc?.title || '未命名文档',
-    docStatus: (state) => state.currentDoc?.status || 'draft',
-    isPublished: (state) => state.currentDoc?.status === 'published',
   },
 
   actions: {
+    // 从文件路径加载文档内容
+    async loadDocumentContent(filePath) {
+      try {
+        const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+        const url = filePath.startsWith('http') ? filePath : `${baseURL}${filePath}`;
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('加载文档内容失败');
+        }
+        return await response.text();
+      } catch (error) {
+        console.error('Failed to load document content:', error);
+        throw error;
+      }
+    },
+
     // 打开文档
     async openDoc(id) {
       try {
         const data = await getDocument(id);
         this.currentDoc = data;
-        this.content = data.contentMd || '';
+        
+        // 如果是MD或TXT文档，从filePath加载内容
+        if ((data.type === 'md' || data.type === 'txt') && data.filePath) {
+          this.content = await this.loadDocumentContent(data.filePath);
+        } else {
+          this.content = '';
+        }
+        
         this.mode = 'view';
         this.dirty = false;
         this.error = null;
@@ -43,18 +69,21 @@ export const useDocStore = defineStore('doc', {
       }
     },
 
-    // 创建文档
-    async createDoc(title, type = 'md', groupId = null, contentMd = '') {
+    // 创建文档（新版API，统一使用文件上传）
+    async createDoc(title, file, groupId = null) {
       try {
-        const data = await apiCreateDocument({
-          title,
-          type,
-          groupId,
-          contentMd,
-        });
+        const data = await apiCreateDocument(title, file, groupId);
         this.currentDoc = data;
-        this.content = data.contentMd || '';
-        this.mode = 'edit'; // 新建文档默认进入编辑模式
+        
+        // 如果是MD或TXT文档，从filePath加载内容
+        if ((data.type === 'md' || data.type === 'txt') && data.filePath) {
+          this.content = await this.loadDocumentContent(data.filePath);
+          this.mode = 'edit'; // 新建文本文档默认进入编辑模式
+        } else {
+          this.content = '';
+          this.mode = 'view'; // PDF文档查看模式
+        }
+        
         this.dirty = false;
         return data;
       } catch (error) {
@@ -63,42 +92,34 @@ export const useDocStore = defineStore('doc', {
       }
     },
 
-    // 创建带文件关联的文档
-    async createDocWithFile(title, type, fileId, contentMd = '', groupId = null) {
-      try {
-        const data = await apiCreateDocument({
-          title,
-          type,
-          groupId,
-          contentMd,
-          fileId, // 关联上传的文件
-        });
-        this.currentDoc = data;
-        this.content = data.contentMd || '';
-        // 如果是PDF，查看模式；如果是Markdown，编辑模式
-        this.mode = type === 'pdf' ? 'view' : 'edit';
-        this.dirty = false;
-        return data;
-      } catch (error) {
-        console.error('Failed to create document with file:', error);
-        throw error;
-      }
-    },
-
-    // 保存文档
+    // 保存文档（新版API，将内容转为文件上传）
     async saveDoc(updates = {}) {
       if (!this.currentDoc) return;
 
       this.saving = true;
       try {
-        const data = await apiUpdateDocument(this.currentDoc.id, {
-          contentMd: this.content,
-          ...updates,
-        });
-        this.currentDoc = data;
-        this.content = data.contentMd || '';
+        // 如果是MD或TXT文档且内容有变化，需要更新文件
+        if ((this.currentDoc.type === 'md' || this.currentDoc.type === 'txt') && this.dirty) {
+          const fileExtension = this.currentDoc.type === 'md' ? '.md' : '.txt';
+          const mimeType = this.currentDoc.type === 'md' ? 'text/markdown' : 'text/plain';
+          
+          // 将内容转为文件
+          const blob = new Blob([this.content], { type: mimeType });
+          const file = new File([blob], `${this.currentDoc.title}${fileExtension}`, { type: mimeType });
+          
+          // 更新文档文件
+          const fileUpdateData = await apiUpdateDocumentFile(this.currentDoc.id, file);
+          this.currentDoc = fileUpdateData;
+        }
+        
+        // 如果有其他元数据更新，调用更新接口
+        if (Object.keys(updates).length > 0) {
+          const data = await apiUpdateDocument(this.currentDoc.id, updates);
+          this.currentDoc = data;
+        }
+        
         this.dirty = false;
-        return data;
+        return this.currentDoc;
       } catch (error) {
         console.error('Failed to save document:', error);
         throw error;
@@ -120,38 +141,6 @@ export const useDocStore = defineStore('doc', {
         return;
       }
       this.mode = mode;
-    },
-
-    // 发布文档
-    async publishDoc() {
-      if (!this.currentDoc) return;
-      
-      try {
-        const data = await apiUpdateDocument(this.currentDoc.id, {
-          status: 'published',
-        });
-        this.currentDoc = data;
-        return data;
-      } catch (error) {
-        console.error('Failed to publish document:', error);
-        throw error;
-      }
-    },
-
-    // 取消发布
-    async unpublishDoc() {
-      if (!this.currentDoc) return;
-      
-      try {
-        const data = await apiUpdateDocument(this.currentDoc.id, {
-          status: 'draft',
-        });
-        this.currentDoc = data;
-        return data;
-      } catch (error) {
-        console.error('Failed to unpublish document:', error);
-        throw error;
-      }
     },
 
     // 删除文档

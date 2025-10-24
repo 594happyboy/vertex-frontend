@@ -144,7 +144,6 @@ type DocumentItem = {
   groupId: number | null;
   title: string;
   type: 'md' | 'pdf';
-  status: 'draft' | 'published';
   sortIndex: number;
   updatedAt: string;
 };

@@ -137,16 +137,5 @@ function handleInput() {
   padding: var(--spacing-2xl);
   background-color: var(--color-bg-primary);
 }
-
-/* 响应式：小屏幕下单栏显示 */
-@media (max-width: 1024px) {
-  .md-editor {
-    grid-template-columns: 1fr;
-  }
-
-  .preview-pane {
-    display: none;
-  }
-}
 </style>
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
-import router from '../router';
-import { useAuthStore } from '../stores/auth';
+import router from '@/blog/router';
+import { useAuthStore } from '@/blog/stores/auth';
 
 // 创建 axios 实例
 const request = axios.create({

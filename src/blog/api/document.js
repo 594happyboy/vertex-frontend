@@ -1,4 +1,4 @@
-import request from './request';
+import request from '@/api/request';
 
 /**
  * 查询文档列表
@@ -19,22 +19,61 @@ export function getDocument(id) {
 }
 
 /**
- * 创建文档
- * @param {Object} data - { title, type, groupId?, contentMd?, fileId? }
+ * 创建文档（新版API，使用FormData）
+ * @param {string} title - 文档标题
+ * @param {File} file - 文件对象（MD/PDF/TXT）
+ * @param {number} groupId - 可选，分组ID
  * @returns {Promise<Object>}
  */
-export function createDocument(data) {
-  return request.post('/api/documents', data);
+export function createDocument(title, file, groupId = null) {
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('file', file);
+  if (groupId !== null && groupId !== undefined) {
+    formData.append('groupId', groupId.toString());
+  }
+  
+  return request.post('/api/documents', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 }
 
 /**
- * 更新文档
+ * 更新文档元数据
  * @param {number} id
- * @param {Object} data - { title?, groupId?, contentMd?, status?, sortIndex? }
+ * @param {Object} data - { title?, groupId?, sortIndex? }
  * @returns {Promise<Object>}
  */
 export function updateDocument(id, data) {
   return request.patch(`/api/documents/${id}`, data);
+}
+
+/**
+ * 更新文档文件（新版API）
+ * @param {number} id - 文档ID
+ * @param {File} file - 新的文件对象
+ * @returns {Promise<Object>}
+ */
+export function updateDocumentFile(id, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  return request.patch(`/api/documents/${id}/file`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+}
+
+/**
+ * 获取文档下载URL
+ * @param {number} id - 文档ID
+ * @returns {Promise<string>}
+ */
+export function getDocumentDownloadUrl(id) {
+  return request.get(`/api/documents/${id}/download`);
 }
 
 /**

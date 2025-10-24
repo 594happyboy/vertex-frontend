@@ -79,9 +79,11 @@ const scale = ref(1.5);
 const pageInput = ref(1);
 
 const pdfUrl = computed(() => {
-  // 假设后端返回的 PDF 文档包含 fileId 或 downloadUrl
-  if (docStore.currentDoc?.fileId) {
-    return `/api/files/${docStore.currentDoc.fileId}/download`;
+  // 使用新的 filePath 字段
+  if (docStore.currentDoc?.filePath) {
+    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    const filePath = docStore.currentDoc.filePath;
+    return filePath.startsWith('http') ? filePath : `${baseURL}${filePath}`;
   }
   return null;
 });
@@ -98,7 +100,12 @@ async function loadPdf() {
     loading.value = true;
     error.value = null;
 
-    const loadingTask = pdfjsLib.getDocument(pdfUrl.value);
+    const loadingTask = pdfjsLib.getDocument({
+      url: pdfUrl.value,
+      httpHeaders: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+    });
     pdfDoc.value = await loadingTask.promise;
     totalPages.value = pdfDoc.value.numPages;
     currentPage.value = 1;

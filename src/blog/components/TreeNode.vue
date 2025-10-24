@@ -1,66 +1,69 @@
 <template>
   <div class="tree-node">
-    <!-- 分组节点 -->
     <div
-      v-if="isGroup"
-      class="node-item"
-      :class="{ selected: isSelected && !isGroup }"
+      :class="['node-item', isGroup ? 'node-group' : 'node-doc', { selected: isSelected }]"
       @click="handleClick"
     >
-      <button class="node-expand" @click.stop="handleToggle">
-        <Icon :icon="isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'" />
-      </button>
-      <Icon class="node-icon" icon="mdi:folder" />
-      <span class="node-label">{{ node.name }}</span>
-      <div class="node-actions">
-        <button class="action-btn" @click.stop="handleCreateGroup" title="新建子分组">
-          <Icon icon="mdi:folder-plus" />
+      <div class="node-leading">
+        <button
+          v-if="isGroup"
+          class="node-expand"
+          @click.stop="handleToggle"
+          :title="isExpanded ? '收起' : '展开'"
+        >
+          <Icon :icon="isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'" />
         </button>
-        <button class="action-btn" @click.stop="handleCreateDoc" title="新建文档">
-          <Icon icon="mdi:file-document-plus" />
+        <span v-else class="node-spacer"></span>
+
+        <span class="node-avatar" :class="{ 'node-avatar--group': isGroup }">
+          <Icon
+            class="node-icon"
+            :icon="isGroup ? 'mdi:folder-star-outline' : nodeIcon"
+          />
+        </span>
+        <span class="node-label" :title="node.name">{{ node.name }}</span>
+      </div>
+
+      <div class="node-actions" ref="menuRef">
+        <button class="action-btn" @click.stop="toggleMenu" title="更多操作">
+          <Icon icon="mdi:dots-horizontal" />
         </button>
-        <button class="action-btn" @click.stop="handleBatchImport" title="批量导入">
-          <Icon icon="mdi:folder-zip" />
-        </button>
-        <button class="action-btn" @click.stop="handleRename" title="重命名">
-          <Icon icon="mdi:pencil" />
-        </button>
-        <button class="action-btn danger" @click.stop="handleDelete" title="删除">
-          <Icon icon="mdi:delete" />
-        </button>
+        <transition name="fade-scale">
+          <div v-if="showMenu" class="action-menu">
+            <template v-if="isGroup">
+              <button class="menu-item" @click="handleCreateGroup">
+                <Icon icon="mdi:folder-plus" />
+                <span>新建子分组</span>
+              </button>
+              <button class="menu-item" @click="handleCreateDoc">
+                <Icon icon="mdi:file-document-plus" />
+                <span>新建文档</span>
+              </button>
+              <button class="menu-item" @click="handleBatchImport">
+                <Icon icon="mdi:folder-zip" />
+                <span>批量导入</span>
+              </button>
+              <div class="menu-divider"></div>
+            </template>
+            <button class="menu-item" @click="handleRename">
+              <Icon icon="mdi:pencil" />
+              <span>重命名</span>
+            </button>
+            <button class="menu-item danger" @click="handleDelete">
+              <Icon icon="mdi:delete" />
+              <span>删除</span>
+            </button>
+          </div>
+        </transition>
       </div>
     </div>
 
-    <!-- 文档节点 -->
-    <div
-      v-else
-      class="node-item node-doc"
-      :class="{ selected: isSelected }"
-      @click="handleClick"
-    >
-      <span class="node-spacer"></span>
-      <Icon
-        class="node-icon"
-        :icon="node.type === 'pdf' ? 'mdi:file-pdf-box' : 'mdi:file-document'"
-      />
-      <span class="node-label">{{ node.name }}</span>
-      <span v-if="node.status === 'published'" class="node-badge">已发布</span>
-      <div class="node-actions">
-        <button class="action-btn" @click.stop="handleRename" title="重命名">
-          <Icon icon="mdi:pencil" />
-        </button>
-        <button class="action-btn danger" @click.stop="handleDelete" title="删除">
-          <Icon icon="mdi:delete" />
-        </button>
-      </div>
-    </div>
-
-    <!-- 子节点（包含子分组和文档） -->
-    <div v-if="isGroup && isExpanded && hasChildren" class="node-children">
+    <div v-if="isGroup && isExpanded && hasChildren" class="node-children" :style="childrenIndentStyle">
       <TreeNode
         v-for="child in node.children"
         :key="`${child.nodeType}-${child.id}`"
         :node="child"
+        :depth="childDepth"
         :selected-id="selectedId"
         :expanded-keys="expandedKeys"
         @select="(node, type) => $emit('select', node, type)"
@@ -76,13 +79,17 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { Icon } from '@iconify/vue';
 
 const props = defineProps({
   node: {
     type: Object,
     required: true,
+  },
+  depth: {
+    type: Number,
+    default: 0,
   },
   selectedId: {
     type: Number,
@@ -104,11 +111,57 @@ const emit = defineEmits([
   'delete',
 ]);
 
+// 菜单状态管理
+const showMenu = ref(false);
+const menuRef = ref(null);
+
+// 点击外部关闭菜单
+function handleClickOutside(event) {
+  if (menuRef.value && !menuRef.value.contains(event.target)) {
+    showMenu.value = false;
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
+
 const isGroup = computed(() => props.node.nodeType?.toUpperCase() === 'GROUP');
 const isSelected = computed(() => props.node.id === props.selectedId);
 const isExpanded = computed(() => props.expandedKeys.includes(props.node.id));
 const hasChildren = computed(() => {
   return isGroup.value && props.node.children && props.node.children.length > 0;
+});
+const nodeIcon = computed(() => {
+  if (props.node.type === 'pdf') return 'mdi:file-pdf-box';
+  if (props.node.type === 'txt') return 'mdi:file-document';
+  return 'mdi:file-document-outline'; // md
+});
+
+// 最大缩进深度限制为3层
+const MAX_INDENT_DEPTH = 3;
+
+// 计算子节点的深度
+const childDepth = computed(() => props.depth + 1);
+
+// 计算是否应该缩进（超过3层后不再缩进）
+const shouldIndent = computed(() => props.depth < MAX_INDENT_DEPTH);
+
+// 计算缩进样式（超过3层后完全不缩进）
+const childrenIndentStyle = computed(() => {
+  if (shouldIndent.value) {
+    return {}; // 使用默认的 CSS 缩进样式
+  } else {
+    return {
+      marginLeft: '0',
+      paddingLeft: '0',
+      borderLeft: 'none',
+    };
+  }
 });
 
 function handleClick() {
@@ -120,24 +173,34 @@ function handleToggle() {
   emit('toggle', props.node.id);
 }
 
+function toggleMenu(event) {
+  event.stopPropagation();
+  showMenu.value = !showMenu.value;
+}
+
 function handleCreateGroup() {
+  showMenu.value = false;
   emit('create-group', props.node.id);
 }
 
 function handleCreateDoc() {
+  showMenu.value = false;
   emit('create-doc', props.node.id);
 }
 
 function handleBatchImport() {
+  showMenu.value = false;
   emit('batch-import', props.node.id);
 }
 
 function handleRename() {
+  showMenu.value = false;
   const type = isGroup.value ? 'group' : 'document';
   emit('rename', props.node, type);
 }
 
 function handleDelete() {
+  showMenu.value = false;
   const type = isGroup.value ? 'group' : 'document';
   emit('delete', props.node, type);
 }
@@ -149,106 +212,193 @@ function handleDelete() {
 }
 
 .node-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-md);
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all var(--transition-fast);
-  position: relative;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .node-item:hover {
-  background-color: var(--color-bg-hover);
+  background: rgba(234, 239, 255, 0.7);
 }
 
 .node-item.selected {
-  background-color: var(--color-primary-light);
-  color: var(--color-primary);
+  background: linear-gradient(135deg, rgba(109, 130, 255, 0.16), rgba(54, 188, 255, 0.14));
+  box-shadow: inset 0 0 0 1px rgba(109, 130, 255, 0.38);
+}
+
+.node-group.selected {
+  transform: translateX(2px);
+}
+
+.node-leading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .node-expand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  color: var(--color-text-secondary);
-  transition: transform var(--transition-fast);
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(187, 198, 255, 0.22);
+  color: #25307a;
+  transition: transform 0.2s ease;
 }
 
-.node-icon {
-  flex-shrink: 0;
-  font-size: 18px;
-  color: var(--color-text-secondary);
+.node-expand :deep(svg) {
+  font-size: 14px;
 }
 
-.node-item.selected .node-icon {
-  color: var(--color-primary);
-}
-
-.node-label {
-  flex: 1;
-  font-size: var(--text-sm);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.node-badge {
-  padding: 2px 6px;
-  background-color: var(--color-success-light);
-  color: var(--color-success);
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  font-weight: 500;
+.node-expand:hover {
+  transform: translateY(-1px);
 }
 
 .node-spacer {
-  width: 20px;
+  width: 18px;
 }
 
-.node-actions {
-  display: none;
-  align-items: center;
-  gap: 2px;
-}
-
-.node-item:hover .node-actions {
-  display: flex;
-}
-
-.action-btn {
-  display: flex;
+.node-avatar {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  transition: all var(--transition-fast);
+  border-radius: 8px;
+  background: rgba(194, 206, 255, 0.35);
+  color: #2b3270;
+}
+
+.node-avatar--group {
+  background: linear-gradient(135deg, rgba(89, 114, 255, 0.2), rgba(87, 188, 255, 0.22));
+}
+
+.node-icon {
+  font-size: 14px;
+}
+
+.node-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: #222a68;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.node-actions {
+  position: relative;
+  display: none;
+  align-items: center;
+}
+
+.node-item:hover .node-actions {
+  display: inline-flex;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  border: 1px solid rgba(194, 204, 255, 0.72);
+  background: rgba(255, 255, 255, 0.95);
+  color: #2b3270;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.action-btn :deep(svg) {
   font-size: 14px;
 }
 
 .action-btn:hover {
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px -18px rgba(26, 42, 116, 0.55);
 }
 
-.action-btn.danger:hover {
-  background-color: var(--color-error-light);
-  color: var(--color-error);
+.action-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 150px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(220, 230, 255, 0.85);
+  box-shadow: 0 20px 38px -26px rgba(20, 28, 72, 0.55);
+  backdrop-filter: blur(14px);
+  padding: 6px;
+  z-index: 40;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #202764;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.menu-item :deep(svg) {
+  font-size: 14px;
+}
+
+.menu-item:hover {
+  background: rgba(214, 222, 255, 0.6);
+}
+
+.menu-item.danger {
+  color: #d64545;
+}
+
+.menu-item.danger:hover {
+  background: rgba(255, 229, 229, 0.9);
+  color: #c23b3b;
+}
+
+.menu-divider {
+  height: 1px;
+  margin: 6px 0;
+  background: rgba(207, 217, 255, 0.6);
+}
+
+.fade-scale-enter-active,
+.fade-scale-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.fade-scale-enter-from,
+.fade-scale-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
 }
 
 .node-children {
-  margin-left: var(--spacing-lg);
-  padding-left: var(--spacing-sm);
-  border-left: 1px solid var(--color-border-light);
-}
-
-.node-doc {
-  padding-left: var(--spacing-sm);
+  margin-left: 10px;
+  padding-left: 5px;
+  border-left: 1px dashed rgba(188, 200, 255, 0.6);
 }
 </style>
 

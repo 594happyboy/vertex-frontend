@@ -1,18 +1,23 @@
 <template>
   <div class="md-viewer">
-    <div class="viewer-content">
+    <div v-if="loading" class="viewer-loading">
+      <div class="loading-spinner"></div>
+      <span>加载中...</span>
+    </div>
+    <div v-else class="viewer-content">
       <div class="markdown-body" v-html="renderedContent"></div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, watch, ref } from 'vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import { useDocStore } from '../stores/doc';
 
 const docStore = useDocStore();
+const loading = ref(false);
 
 // 配置 markdown-it
 const md = new MarkdownIt({
@@ -38,6 +43,35 @@ const renderedContent = computed(() => {
   const content = docStore.content || '';
   return md.render(content);
 });
+
+// 监听文档变化，显示加载状态
+watch(
+  () => docStore.currentDoc,
+  async (newDoc, oldDoc) => {
+    if (newDoc && newDoc.id !== oldDoc?.id) {
+      if ((newDoc.type === 'md' || newDoc.type === 'txt') && !docStore.content) {
+        loading.value = true;
+        // 等待内容加载
+        await new Promise(resolve => {
+          const unwatch = watch(
+            () => docStore.content,
+            (content) => {
+              if (content) {
+                loading.value = false;
+                unwatch();
+                resolve();
+              }
+            },
+            { immediate: true }
+          );
+        });
+      } else {
+        loading.value = false;
+      }
+    }
+  },
+  { immediate: true }
+);
 
 // 处理链接点击（新窗口打开外链）
 function handleLinkClick(event) {
@@ -78,6 +112,31 @@ onUnmounted(() => {
   max-width: 900px;
   margin: 0 auto;
   padding: var(--spacing-2xl);
+}
+
+.viewer-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--spacing-md);
+  color: var(--color-text-secondary);
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
 

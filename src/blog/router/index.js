@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import LoginView from '../views/LoginView.vue';
+import MainLayout from '../layouts/MainLayout.vue';
 import AdminView from '../views/AdminView.vue';
 
 const routes = [
@@ -16,15 +17,36 @@ const routes = [
   },
   {
     path: '/me',
-    name: 'Admin',
-    component: AdminView,
+    component: MainLayout,  // 使用主布局
     meta: { requiresAuth: true },
-  },
-  {
-    path: '/me/doc/:id',
-    name: 'AdminDoc',
-    component: AdminView,
-    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        name: 'Knowledge',
+        component: AdminView,
+      },
+      {
+        path: 'doc/:id',
+        name: 'KnowledgeDoc',
+        component: AdminView,
+      },
+      {
+        path: 'files',
+        name: 'Files',
+        component: () => import('../../file/views/FileManager.vue'),
+      },
+      // 未来扩展：
+      // {
+      //   path: 'stats',
+      //   name: 'Stats',
+      //   component: () => import('../views/StatsView.vue'),
+      // },
+      // {
+      //   path: 'settings',
+      //   name: 'Settings',
+      //   component: () => import('../views/SettingsView.vue'),
+      // },
+    ],
   },
   // 可选：公开阅读页
   {

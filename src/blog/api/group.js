@@ -1,4 +1,4 @@
-import request from './request';
+import request from '@/api/request';
 
 /**
  * 获取完整目录树（分组+文档）
