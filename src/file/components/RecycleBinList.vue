@@ -189,8 +189,8 @@ function handlePermanentDelete(file) {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 32px 36px;
-  min-height: 100%;
+  padding: 20px 36px;
+  height: 100%;
 }
 
 .recycle-header {
@@ -198,7 +198,6 @@ function handlePermanentDelete(file) {
   justify-content: space-between;
   align-items: flex-end;
   gap: 24px;
-  padding-bottom: 24px;
   border-bottom: 1px solid rgba(200, 210, 255, 0.25);
 }
 
@@ -213,7 +212,7 @@ function handlePermanentDelete(file) {
   align-items: center;
   gap: 12px;
   margin: 0;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #1f256a;
 }
@@ -259,7 +258,7 @@ function handlePermanentDelete(file) {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  min-height: 400px;
+  height: 100%;
   padding: 64px 32px;
   color: rgba(43, 49, 96, 0.65);
   border-radius: 20px;

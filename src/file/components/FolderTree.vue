@@ -219,16 +219,16 @@ onUnmounted(() => {
 .folder-tree {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 8px;
+  gap: 2px;
+  padding: 8px 6px;
 }
 
 .folder-node-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
@@ -245,9 +245,9 @@ onUnmounted(() => {
 }
 
 .root-folder {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   border-bottom: 1px solid rgba(200, 210, 255, 0.3);
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .expand-placeholder {
@@ -259,14 +259,14 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 18px;
   color: #6076ff;
   flex-shrink: 0;
 }
 
 .folder-name {
   flex: 1;
-  font-size: 14px;
+  font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -276,13 +276,13 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
   background: rgba(96, 118, 255, 0.12);
   color: #3a54f5;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -299,8 +299,8 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 24px 16px;
+  gap: 8px;
+  padding: 20px 12px;
   color: rgba(47, 59, 128, 0.6);
   text-align: center;
 }

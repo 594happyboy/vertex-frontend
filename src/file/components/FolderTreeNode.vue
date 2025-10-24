@@ -62,6 +62,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Icon } from '@iconify/vue';
+import { useFileStore } from '../stores/file';
 
 const props = defineProps({
   folder: {
@@ -80,7 +81,7 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'context-menu', 'drop-files']);
 
-const expanded = ref(props.level === 0); // 第一层默认展开
+const store = useFileStore();
 const isDragging = ref(false);
 const isDragOver = ref(false);
 
@@ -92,8 +93,13 @@ const isActive = computed(() => {
   return props.folder.id === props.currentFolderId;
 });
 
+// 使用 store 中的展开状态
+const expanded = computed(() => {
+  return store.isFolderExpanded(props.folder.id);
+});
+
 function toggleExpand() {
-  expanded.value = !expanded.value;
+  store.toggleFolderExpand(props.folder.id);
 }
 
 function handleClick() {
@@ -151,10 +157,10 @@ function handleDrop(event) {
 .folder-node-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  padding-left: calc(10px + v-bind('level * 20') * 1px);
-  border-radius: 8px;
+  gap: 6px;
+  padding: 6px 8px;
+  padding-left: calc(8px + v-bind('level * 18') * 1px);
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
@@ -207,13 +213,13 @@ function handleDrop(event) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 18px;
   flex-shrink: 0;
 }
 
 .folder-name {
   flex: 1;
-  font-size: 14px;
+  font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -223,13 +229,13 @@ function handleDrop(event) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
   background: rgba(96, 118, 255, 0.12);
   color: #3a54f5;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }

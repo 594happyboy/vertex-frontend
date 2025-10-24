@@ -34,6 +34,7 @@ export const useFileStore = defineStore('file', {
     currentFolderId: null,    // 当前选中的文件夹ID (null表示根目录)
     folderPath: [],           // 当前文件夹的面包屑路径
     folderLoading: false,     // 文件夹操作加载状态
+    expandedFolders: [],      // 展开的文件夹ID集合
     
     // ========== 文件相关 ==========
     files: [],                // 文件列表
@@ -147,6 +148,15 @@ export const useFileStore = defineStore('file', {
         const data = await fetchFolderTreeService(this.userId, true);
         this.folderTree = data.rootFolders;
         
+        // 初始化展开状态：默认展开第一层文件夹
+        if (this.expandedFolders.length === 0 && data.rootFolders.length > 0) {
+          data.rootFolders.forEach(folder => {
+            if (!this.expandedFolders.includes(folder.id)) {
+              this.expandedFolders.push(folder.id);
+            }
+          });
+        }
+        
         // 更新统计信息
         if (!this.statistics) {
           this.statistics = {
@@ -207,6 +217,12 @@ export const useFileStore = defineStore('file', {
       this.folderLoading = true;
       try {
         const folder = await createFolderService(data, this.userId);
+        
+        // 如果有父文件夹，确保它保持展开状态
+        if (data.parentId && !this.expandedFolders.includes(data.parentId)) {
+          this.expandedFolders.push(data.parentId);
+        }
+        
         await this.fetchFolderTree(); // 刷新文件夹树
         return folder;
       } catch (error) {
@@ -278,6 +294,25 @@ export const useFileStore = defineStore('file', {
         console.error('排序文件夹失败:', error);
         throw error;
       }
+    },
+
+    /**
+     * 切换文件夹展开状态
+     */
+    toggleFolderExpand(folderId) {
+      const index = this.expandedFolders.indexOf(folderId);
+      if (index > -1) {
+        this.expandedFolders.splice(index, 1);
+      } else {
+        this.expandedFolders.push(folderId);
+      }
+    },
+
+    /**
+     * 检查文件夹是否展开
+     */
+    isFolderExpanded(folderId) {
+      return this.expandedFolders.includes(folderId);
     },
 
     // ========== 文件操作 ==========

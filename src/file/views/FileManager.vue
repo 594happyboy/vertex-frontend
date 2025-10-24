@@ -1,37 +1,22 @@
 <template>
   <div class="file-manager">
-    <!-- 左侧边栏 -->
-    <aside class="file-sidebar" :class="{ collapsed: sidebarCollapsed }">
-      <!-- 顶部操作区 -->
+    <!-- 左侧边栏 - 只在文件库视图显示 -->
+    <aside 
+      v-if="store.activeView === 'files'" 
+      class="file-sidebar" 
+      :class="{ collapsed: sidebarCollapsed }"
+    >
+      <!-- 紧凑的顶部区域 -->
       <div class="sidebar-header">
-        <button class="btn-upload" @click="triggerFileUpload">
+        <!-- 上传按钮 -->
+        <button class="btn-upload" @click="triggerFileUpload" title="上传文件">
           <Icon icon="mdi:cloud-upload" />
-          <span>上传文件</span>
-        </button>
-      </div>
-
-      <!-- 视图切换 -->
-      <div class="view-tabs">
-        <button
-          class="view-tab"
-          :class="{ active: store.activeView === 'files' }"
-          @click="handleViewChange('files')"
-        >
-          <Icon icon="mdi:folder-star-multiple" />
-          <span>文件库</span>
-        </button>
-        <button
-          class="view-tab"
-          :class="{ active: store.activeView === 'recycle' }"
-          @click="handleViewChange('recycle')"
-        >
-          <Icon icon="mdi:delete-clock-outline" />
-          <span>回收站</span>
+          <span>上传</span>
         </button>
       </div>
 
       <!-- 文件夹树 -->
-      <div v-if="store.activeView === 'files'" class="sidebar-content">
+      <div class="sidebar-content">
         <FolderTree
           :folders="store.folderTree"
           :current-folder-id="store.currentFolderId"
@@ -170,6 +155,19 @@
       @close="dialogs.moveFile = false"
       @submit="handleMoveFile"
     />
+
+    <!-- 悬浮视图切换按钮 -->
+    <button 
+      class="fab-view-switch"
+      :class="{ 'recycle-mode': store.activeView === 'files' }"
+      @click="toggleView"
+      :title="store.activeView === 'files' ? '回收站' : '文件库'"
+    >
+      <Icon 
+        :icon="store.activeView === 'files' ? 'mdi:delete' : 'mdi:folder-multiple'" 
+        class="fab-icon"
+      />
+    </button>
   </div>
 </template>
 
@@ -438,6 +436,11 @@ async function handleViewChange(view) {
   }
 }
 
+function toggleView() {
+  const newView = store.activeView === 'files' ? 'recycle' : 'files';
+  handleViewChange(newView);
+}
+
 async function handleRefresh() {
   try {
     await store.refresh();
@@ -540,19 +543,22 @@ function countFolders(folders) {
 }
 
 .sidebar-header {
-  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
   border-bottom: 1px solid rgba(200, 210, 255, 0.3);
   flex-shrink: 0;
 }
 
 .btn-upload {
+  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: 1px solid rgba(96, 118, 255, 0.35);
   background: linear-gradient(135deg, rgba(96, 118, 255, 0.18), rgba(33, 181, 255, 0.14));
   color: #1f256a;
@@ -565,51 +571,10 @@ function countFolders(folders) {
 .btn-upload:hover {
   transform: translateY(-1px);
   border-color: rgba(68, 95, 247, 0.7);
-  box-shadow: 0 14px 28px -16px rgba(68, 95, 247, 0.66);
+  box-shadow: 0 12px 24px -14px rgba(68, 95, 247, 0.66);
 }
 
 .btn-upload :deep(svg) {
-  font-size: 16px;
-}
-
-.view-tabs {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(200, 210, 255, 0.3);
-  flex-shrink: 0;
-}
-
-.view-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(200, 210, 255, 0.3);
-  background: rgba(255, 255, 255, 0.3);
-  color: rgba(47, 59, 128, 0.7);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.view-tab:hover {
-  background: rgba(255, 255, 255, 0.5);
-  color: #27317a;
-}
-
-.view-tab.active {
-  background: rgba(255, 255, 255, 0.85);
-  color: #1f256a;
-  font-weight: 600;
-  border-color: rgba(96, 118, 255, 0.35);
-  box-shadow: 0 8px 20px -14px rgba(59, 94, 211, 0.5);
-}
-
-.view-tab :deep(svg) {
   font-size: 16px;
 }
 
@@ -621,7 +586,7 @@ function countFolders(folders) {
 }
 
 .sidebar-footer {
-  padding: 12px 16px;
+  padding: 10px;
   border-top: 1px solid rgba(200, 210, 255, 0.3);
   flex-shrink: 0;
 }
@@ -733,5 +698,55 @@ function countFolders(folders) {
 .fade-view-leave-to {
   opacity: 0;
   transform: translateY(10px);
+}
+
+/* ========== 悬浮按钮 ========== */
+.fab-view-switch {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #6076ff 0%, #4c63ff 100%);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(96, 118, 255, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fab-view-switch:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 12px 32px rgba(96, 118, 255, 0.5);
+  background: linear-gradient(135deg, #4c63ff 0%, #3a54f5 100%);
+}
+
+.fab-view-switch:active {
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* 文件库模式 - 红色（表示进入回收站） */
+.fab-view-switch.recycle-mode {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  box-shadow: 0 8px 24px rgba(231, 76, 60, 0.4);
+}
+
+.fab-view-switch.recycle-mode:hover {
+  box-shadow: 0 12px 32px rgba(231, 76, 60, 0.5);
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+}
+
+.fab-icon {
+  font-size: 28px;
+  transition: transform 0.3s ease;
+}
+
+.fab-view-switch:hover .fab-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 </style>
