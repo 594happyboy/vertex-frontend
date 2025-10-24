@@ -3,12 +3,12 @@
     <div 
       class="folder-option"
       :class="{ selected: folder.id === selectedFolderId }"
-      :style="{ paddingLeft: (16 + level * 20) + 'px' }"
+      :style="{ paddingLeft: (8 + level * 18) + 'px' }"
       @click="$emit('select', folder.id)"
     >
       <Icon icon="mdi:folder" class="folder-icon" :style="{ color: folder.color || '#6076FF' }" />
-      <span>{{ folder.name }}</span>
-      <span v-if="folder.fileCount > 0" class="file-count">({{ folder.fileCount }})</span>
+      <span class="folder-name">{{ folder.name }}</span>
+      <span v-if="folder.fileCount > 0" class="file-count">{{ folder.fileCount }}</span>
       <Icon v-if="folder.id === selectedFolderId" icon="mdi:check-circle" class="check-icon" />
     </div>
     
@@ -50,45 +50,55 @@ defineEmits(['select']);
 .folder-option {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(200, 210, 255, 0.3);
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: transparent;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .folder-option:hover {
   background: rgba(96, 118, 255, 0.08);
-  border-color: rgba(96, 118, 255, 0.4);
 }
 
 .folder-option.selected {
   background: rgba(96, 118, 255, 0.15);
-  border-color: rgba(96, 118, 255, 0.6);
   font-weight: 600;
 }
 
 .folder-icon {
-  font-size: 20px;
-  color: #6076FF;
+  font-size: 16px;
   flex-shrink: 0;
 }
 
-.folder-option span {
+.folder-name {
   flex: 1;
-  font-size: 14px;
+  font-size: 13px;
   color: #1f256a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-count {
-  font-size: 12px;
-  color: rgba(47, 59, 128, 0.6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: rgba(96, 118, 255, 0.12);
+  color: #3a54f5;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .check-icon {
-  font-size: 20px;
+  font-size: 16px;
   color: #4CAF50;
   flex-shrink: 0;
 }

@@ -54,6 +54,7 @@ function handleNavigate(folderId) {
   padding: 5px 0px;
   overflow-x: auto;
   overflow-y: hidden;
+  flex-shrink: 0;
 }
 
 .breadcrumb-items {

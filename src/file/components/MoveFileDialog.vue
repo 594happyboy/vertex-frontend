@@ -201,59 +201,63 @@ function handleSubmit() {
 .folder-selector {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .selector-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: rgba(47, 59, 128, 0.8);
+  color: rgba(47, 59, 128, 0.7);
+  padding-left: 2px;
 }
 
 .folder-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 4px 2px;
 }
 
 /* 根目录选项样式 */
 .folder-selector > .folder-option {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(200, 210, 255, 0.3);
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: transparent;
   cursor: pointer;
   transition: all 0.2s ease;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(200, 210, 255, 0.3);
+  padding-bottom: 6px;
 }
 
 .folder-selector > .folder-option:hover {
   background: rgba(96, 118, 255, 0.08);
-  border-color: rgba(96, 118, 255, 0.4);
 }
 
 .folder-selector > .folder-option.selected {
   background: rgba(96, 118, 255, 0.15);
-  border-color: rgba(96, 118, 255, 0.6);
   font-weight: 600;
 }
 
 .folder-selector > .folder-option .folder-icon {
-  font-size: 20px;
+  font-size: 18px;
   color: #6076FF;
   flex-shrink: 0;
 }
 
 .folder-selector > .folder-option span {
   flex: 1;
-  font-size: 14px;
+  font-size: 13px;
   color: #1f256a;
 }
 
 .folder-selector > .folder-option .check-icon {
-  font-size: 20px;
+  font-size: 16px;
   color: #4CAF50;
   flex-shrink: 0;
 }
@@ -336,6 +340,24 @@ function handleSubmit() {
 .dialog-body::-webkit-scrollbar-thumb {
   background: rgba(96, 118, 255, 0.3);
   border-radius: 3px;
+}
+
+.folder-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.folder-list::-webkit-scrollbar-track {
+  background: rgba(200, 210, 255, 0.1);
+  border-radius: 3px;
+}
+
+.folder-list::-webkit-scrollbar-thumb {
+  background: rgba(96, 118, 255, 0.3);
+  border-radius: 3px;
+}
+
+.folder-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(96, 118, 255, 0.5);
 }
 
 /* 动画 */
