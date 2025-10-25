@@ -61,7 +61,6 @@ function mapFile(dto) {
     extension: dto.fileExtension,
     folderId: dto.folderId || null,
     folderName: dto.folderName || null,
-    tags: dto.tags || [],
     description: dto.description || null,
     uploadTime: dto.uploadTime,
     updateTime: dto.updateTime,

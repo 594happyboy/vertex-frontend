@@ -149,67 +149,42 @@ const ICON_MAP = {
 const isGroup = computed(() => props.node.nodeType?.toUpperCase() === 'GROUP');
 const nodeType = computed(() => isGroup.value ? 'group' : 'document');
 
-const isSelected = computed(() => {
-  if (props.node.id !== props.selectedId) return false;
-  if (!props.selectedType) return true;
-  return nodeType.value === props.selectedType;
-});
+const isSelected = computed(() => 
+  props.node.id === props.selectedId && 
+  (!props.selectedType || nodeType.value === props.selectedType)
+);
 
 const isExpanded = computed(() => props.expandedKeys.includes(props.node.id));
 const hasChildren = computed(() => isGroup.value && props.node.children?.length > 0);
 const childDepth = computed(() => props.depth + 1);
-
-const nodeIcon = computed(() => 
-  ICON_MAP[props.node.type] || ICON_MAP.md
-);
+const nodeIcon = computed(() => ICON_MAP[props.node.type] || ICON_MAP.md);
 
 const childrenIndentStyle = computed(() => 
-  props.depth < MAX_INDENT_DEPTH ? {} : {
-    marginLeft: '0',
-    paddingLeft: '0',
-    borderLeft: 'none',
-  }
+  props.depth >= MAX_INDENT_DEPTH 
+    ? { marginLeft: '0', paddingLeft: '0', borderLeft: 'none' }
+    : {}
 );
 
 // 事件处理
-function handleClick() {
-  emit('select', props.node, nodeType.value);
-}
+const handleClick = () => emit('select', props.node, nodeType.value);
+const handleToggle = () => emit('toggle', props.node.id);
 
-function handleToggle() {
-  emit('toggle', props.node.id);
-}
-
-function toggleMenu(event) {
+const toggleMenu = (event) => {
   event.stopPropagation();
   showMenu.value = !showMenu.value;
-}
+};
 
 // 菜单操作的通用处理函数
-function handleMenuAction(action, ...args) {
+const handleMenuAction = (action, ...args) => {
   showMenu.value = false;
   emit(action, ...args);
-}
+};
 
-function handleCreateGroup() {
-  handleMenuAction('create-group', props.node.id);
-}
-
-function handleCreateDoc() {
-  handleMenuAction('create-doc', props.node.id);
-}
-
-function handleBatchImport() {
-  handleMenuAction('batch-import', props.node.id);
-}
-
-function handleRename() {
-  handleMenuAction('rename', props.node, nodeType.value);
-}
-
-function handleDelete() {
-  handleMenuAction('delete', props.node, nodeType.value);
-}
+const handleCreateGroup = () => handleMenuAction('create-group', props.node.id);
+const handleCreateDoc = () => handleMenuAction('create-doc', props.node.id);
+const handleBatchImport = () => handleMenuAction('batch-import', props.node.id);
+const handleRename = () => handleMenuAction('rename', props.node, nodeType.value);
+const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value);
 </script>
 
 <style scoped>

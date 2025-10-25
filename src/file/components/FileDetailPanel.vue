@@ -55,33 +55,6 @@
         <div class="detail-value">{{ file.downloadCount }} 次</div>
       </div>
 
-      <!-- 标签 -->
-      <div class="detail-section">
-        <label class="detail-label">标签</label>
-        <div class="tags-editor">
-          <div v-if="file.tags && file.tags.length > 0" class="tags-list">
-            <span v-for="(tag, index) in file.tags" :key="index" class="tag-item">
-              {{ tag }}
-              <button class="tag-remove" @click="handleRemoveTag(index)">
-                <Icon icon="mdi:close" />
-              </button>
-            </span>
-          </div>
-          <div class="tag-input-wrapper">
-            <input
-              v-model="newTag"
-              type="text"
-              placeholder="添加标签..."
-              class="tag-input"
-              @keyup.enter="handleAddTag"
-            />
-            <button class="btn-add-tag" @click="handleAddTag">
-              <Icon icon="mdi:plus" />
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- 描述 -->
       <div class="detail-section">
         <label class="detail-label">描述</label>
@@ -146,11 +119,9 @@ const emit = defineEmits([
 ]);
 
 const isEditing = ref(false);
-const newTag = ref('');
 const editData = ref({
   fileName: '',
   description: '',
-  tags: [],
 });
 
 // 监听文件变化，重置编辑数据
@@ -159,7 +130,6 @@ watch(() => props.file, (file) => {
     editData.value = {
       fileName: file.name,
       description: file.description || '',
-      tags: [...(file.tags || [])],
     };
   }
   isEditing.value = false;
@@ -238,27 +208,6 @@ function handleSave() {
   }
   
   isEditing.value = false;
-}
-
-function handleAddTag() {
-  const tag = newTag.value.trim();
-  if (tag && !editData.value.tags.includes(tag)) {
-    editData.value.tags.push(tag);
-    newTag.value = '';
-    
-    emit('update', {
-      id: props.file.id,
-      data: { tags: editData.value.tags.join(',') }
-    });
-  }
-}
-
-function handleRemoveTag(index) {
-  editData.value.tags.splice(index, 1);
-  emit('update', {
-    id: props.file.id,
-    data: { tags: editData.value.tags.join(',') }
-  });
 }
 
 function handleDownload() {
@@ -458,97 +407,6 @@ function handleDelete() {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-}
-
-.tags-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tag-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: rgba(96, 118, 255, 0.12);
-  color: #1f256a;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.tag-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: rgba(96, 118, 255, 0.2);
-  color: #1f256a;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tag-remove:hover {
-  background: rgba(231, 76, 60, 0.2);
-  color: #e74c3c;
-}
-
-.tag-remove :deep(svg) {
-  font-size: 12px;
-}
-
-.tag-input-wrapper {
-  display: flex;
-  gap: 8px;
-}
-
-.tag-input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid rgba(200, 210, 255, 0.5);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #1f256a;
-  font-size: 13px;
-}
-
-.tag-input:focus {
-  outline: none;
-  border-color: rgba(96, 118, 255, 0.7);
-}
-
-.btn-add-tag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: 8px;
-  background: rgba(96, 118, 255, 0.15);
-  color: #1f256a;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-add-tag:hover {
-  background: rgba(96, 118, 255, 0.25);
-}
-
-.btn-add-tag :deep(svg) {
-  font-size: 18px;
 }
 
 .detail-actions {

@@ -6,7 +6,7 @@
         <div class="search-row">
           <div class="search-box">
             <Icon icon="mdi:magnify" class="search-icon" />
-            <input v-model="searchKeyword" type="text" placeholder="搜索文档或分组..." @input="handleSearch" />
+            <input v-model="searchKeyword" type="text" placeholder="搜索文档或分组..." />
             <button v-if="searchKeyword" class="search-clear" type="button" @click="clearSearch">
               <Icon icon="mdi:close-circle" />
             </button>
@@ -28,7 +28,15 @@
           <span>{{ error }}</span>
         </div>
 
-        <div v-else-if="tree.length === 0" class="tree-status tree-status--empty">
+        <!-- 搜索无结果 -->
+        <div v-else-if="tree.length === 0 && isSearching" class="tree-status tree-status--no-results">
+          <Icon icon="mdi:text-box-search-outline" />
+          <p class="tree-status__text">未找到匹配的文档或分组</p>
+          <p class="tree-status__hint">试试其他搜索关键词</p>
+        </div>
+
+        <!-- 真正的空状态 -->
+        <div v-else-if="tree.length === 0 && !isSearching" class="tree-status tree-status--empty">
           <Icon icon="mdi:folder-open-outline" />
           <p class="tree-status__text">暂无分组，创建一个新的分组开始组织内容。</p>
           <button class="btn-primary" @click="handleCreateGroup(null)">
@@ -144,7 +152,15 @@ const showCreateDocDialog = ref(false);
 const showImportDialog = ref(false);
 
 // 计算属性
-const tree = computed(() => treeStore.tree);
+const normalizedKeyword = computed(() => searchKeyword.value.trim().toLowerCase());
+const isSearching = computed(() => normalizedKeyword.value.length > 0);
+
+const tree = computed(() => {
+  return isSearching.value 
+    ? filterTree(treeStore.tree, normalizedKeyword.value)
+    : treeStore.tree;
+});
+
 const loading = computed(() => treeStore.loading);
 const error = computed(() => treeStore.error);
 const selectedId = computed(() => treeStore.selectedId);
@@ -154,14 +170,44 @@ const expandedKeys = computed(() => treeStore.expandedKeys);
 const emit = defineEmits(['refresh']);
 
 // ===== 搜索功能 =====
-function handleSearch() {
-  docStore.setSearchKeyword(searchKeyword.value);
+/**
+ * 递归过滤树形数据
+ * @param {Array} nodes - 树节点数组
+ * @param {String} keyword - 搜索关键词（已转小写）
+ * @returns {Array} 过滤后的树节点数组
+ */
+function filterTree(nodes, keyword) {
+  if (!nodes?.length) return [];
+  
+  return nodes.reduce((filtered, node) => {
+    const nameMatch = node.name.toLowerCase().includes(keyword);
+    const isGroup = node.nodeType?.toUpperCase() === 'GROUP';
+    
+    // 递归过滤子节点
+    const filteredChildren = isGroup && node.children?.length 
+      ? filterTree(node.children, keyword)
+      : [];
+    
+    // 保留匹配的节点或包含匹配子节点的分组
+    if (nameMatch || filteredChildren.length > 0) {
+      const filteredNode = { ...node };
+      
+      if (filteredChildren.length > 0) {
+        filteredNode.children = filteredChildren;
+        // 自动展开包含搜索结果的分组
+        if (!expandedKeys.value.includes(node.id)) {
+          treeStore.expandNode(node.id);
+        }
+      }
+      
+      filtered.push(filteredNode);
+    }
+    
+    return filtered;
+  }, []);
 }
 
-function clearSearch() {
-  searchKeyword.value = '';
-  handleSearch();
-}
+const clearSearch = () => searchKeyword.value = '';
 
 // ===== 节点操作 =====
 function handleSelect(node, type) {
@@ -652,6 +698,21 @@ async function handleBatchFileSelect(event) {
 .tree-status--empty :deep(svg) {
   font-size: 46px;
   color: rgba(96, 108, 182, 0.5);
+}
+
+.tree-status--no-results {
+  color: rgba(33, 42, 110, 0.6);
+}
+
+.tree-status--no-results :deep(svg) {
+  font-size: 46px;
+  color: rgba(120, 140, 255, 0.5);
+}
+
+.tree-status__hint {
+  font-size: 12px;
+  color: rgba(33, 42, 110, 0.5);
+  margin-top: -8px;
 }
 
 .status-loader {

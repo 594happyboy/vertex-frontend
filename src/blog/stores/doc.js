@@ -14,7 +14,6 @@ export const useDocStore = defineStore('doc', {
     mode: 'view', // 'view' | 'edit'
     saving: false,
     dirty: false, // 是否有未保存的修改
-    searchKeyword: '',
     error: null,
   }),
 
@@ -157,11 +156,6 @@ export const useDocStore = defineStore('doc', {
         console.error('Failed to delete document:', error);
         throw error;
       }
-    },
-
-    // 更新搜索关键词
-    setSearchKeyword(keyword) {
-      this.searchKeyword = keyword;
     },
 
     // 关闭当前文档

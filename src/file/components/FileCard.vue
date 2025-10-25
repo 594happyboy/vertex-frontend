@@ -25,10 +25,6 @@
       <h4 class="file-name" :title="file.name">{{ file.name }}</h4>
       <div class="file-meta">
         <span class="file-size">{{ file.sizeFormatted }}</span>
-        <span v-if="file.tags && file.tags.length > 0" class="file-tags">
-          <Icon icon="mdi:tag" />
-          {{ file.tags.slice(0, 2).join(', ') }}
-        </span>
       </div>
     </div>
 
@@ -293,20 +289,6 @@ function handleDragEnd() {
 
 .file-size {
   font-variant-numeric: tabular-nums;
-}
-
-.file-tags {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-tags :deep(svg) {
-  font-size: 14px;
-  flex-shrink: 0;
 }
 
 .file-actions {
