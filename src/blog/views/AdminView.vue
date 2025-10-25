@@ -6,7 +6,6 @@
         <DocTree
           ref="docTreeRef"
           @refresh="handleRefresh"
-          @create-root="handleCreateNew"
         />
       </aside>
 
@@ -16,24 +15,19 @@
         </div>
       </main>
     </div>
-
-    <CreateDialog v-if="showCreateDialog" @close="showCreateDialog = false" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { Icon } from '@iconify/vue';
+import { computed, onMounted } from 'vue';
 import { useTreeStore } from '../stores/tree';
 import { useUiStore } from '../stores/ui';
 import DocTree from '../components/DocTree.vue';
 import DocWorkspace from '../components/DocWorkspace.vue';
-import CreateDialog from '../components/CreateDialog.vue';
 
 const treeStore = useTreeStore();
 const uiStore = useUiStore();
 
-const showCreateDialog = ref(false);
 const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
 
 onMounted(async () => {
@@ -43,10 +37,6 @@ onMounted(async () => {
     uiStore.showError('加载数据失败');
   }
 });
-
-function handleCreateNew() {
-  showCreateDialog.value = true;
-}
 
 function handleRefresh() {
   treeStore.fetchTree();

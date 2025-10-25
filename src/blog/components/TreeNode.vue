@@ -65,6 +65,7 @@
         :node="child"
         :depth="childDepth"
         :selected-id="selectedId"
+        :selected-type="selectedType"
         :expanded-keys="expandedKeys"
         @select="(node, type) => $emit('select', node, type)"
         @toggle="(id) => $emit('toggle', id)"
@@ -93,6 +94,10 @@ const props = defineProps({
   },
   selectedId: {
     type: Number,
+    default: null,
+  },
+  selectedType: {
+    type: String,
     default: null,
   },
   expandedKeys: {
@@ -130,43 +135,45 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
 });
 
-const isGroup = computed(() => props.node.nodeType?.toUpperCase() === 'GROUP');
-const isSelected = computed(() => props.node.id === props.selectedId);
-const isExpanded = computed(() => props.expandedKeys.includes(props.node.id));
-const hasChildren = computed(() => {
-  return isGroup.value && props.node.children && props.node.children.length > 0;
-});
-const nodeIcon = computed(() => {
-  if (props.node.type === 'pdf') return 'mdi:file-pdf-box';
-  if (props.node.type === 'txt') return 'mdi:file-document';
-  return 'mdi:file-document-outline'; // md
-});
-
-// 最大缩进深度限制为3层
+// 最大缩进深度限制
 const MAX_INDENT_DEPTH = 3;
 
-// 计算子节点的深度
-const childDepth = computed(() => props.depth + 1);
+// 文档类型图标映射
+const ICON_MAP = {
+  pdf: 'mdi:file-pdf-box',
+  txt: 'mdi:file-document',
+  md: 'mdi:file-document-outline'
+};
 
-// 计算是否应该缩进（超过3层后不再缩进）
-const shouldIndent = computed(() => props.depth < MAX_INDENT_DEPTH);
+// 计算属性
+const isGroup = computed(() => props.node.nodeType?.toUpperCase() === 'GROUP');
+const nodeType = computed(() => isGroup.value ? 'group' : 'document');
 
-// 计算缩进样式（超过3层后完全不缩进）
-const childrenIndentStyle = computed(() => {
-  if (shouldIndent.value) {
-    return {}; // 使用默认的 CSS 缩进样式
-  } else {
-    return {
-      marginLeft: '0',
-      paddingLeft: '0',
-      borderLeft: 'none',
-    };
-  }
+const isSelected = computed(() => {
+  if (props.node.id !== props.selectedId) return false;
+  if (!props.selectedType) return true;
+  return nodeType.value === props.selectedType;
 });
 
+const isExpanded = computed(() => props.expandedKeys.includes(props.node.id));
+const hasChildren = computed(() => isGroup.value && props.node.children?.length > 0);
+const childDepth = computed(() => props.depth + 1);
+
+const nodeIcon = computed(() => 
+  ICON_MAP[props.node.type] || ICON_MAP.md
+);
+
+const childrenIndentStyle = computed(() => 
+  props.depth < MAX_INDENT_DEPTH ? {} : {
+    marginLeft: '0',
+    paddingLeft: '0',
+    borderLeft: 'none',
+  }
+);
+
+// 事件处理
 function handleClick() {
-  const type = isGroup.value ? 'group' : 'document';
-  emit('select', props.node, type);
+  emit('select', props.node, nodeType.value);
 }
 
 function handleToggle() {
@@ -178,31 +185,30 @@ function toggleMenu(event) {
   showMenu.value = !showMenu.value;
 }
 
-function handleCreateGroup() {
+// 菜单操作的通用处理函数
+function handleMenuAction(action, ...args) {
   showMenu.value = false;
-  emit('create-group', props.node.id);
+  emit(action, ...args);
+}
+
+function handleCreateGroup() {
+  handleMenuAction('create-group', props.node.id);
 }
 
 function handleCreateDoc() {
-  showMenu.value = false;
-  emit('create-doc', props.node.id);
+  handleMenuAction('create-doc', props.node.id);
 }
 
 function handleBatchImport() {
-  showMenu.value = false;
-  emit('batch-import', props.node.id);
+  handleMenuAction('batch-import', props.node.id);
 }
 
 function handleRename() {
-  showMenu.value = false;
-  const type = isGroup.value ? 'group' : 'document';
-  emit('rename', props.node, type);
+  handleMenuAction('rename', props.node, nodeType.value);
 }
 
 function handleDelete() {
-  showMenu.value = false;
-  const type = isGroup.value ? 'group' : 'document';
-  emit('delete', props.node, type);
+  handleMenuAction('delete', props.node, nodeType.value);
 }
 </script>
 
@@ -218,9 +224,11 @@ function handleDelete() {
   justify-content: space-between;
   gap: 8px;
   padding: 6px 8px;
+  margin-bottom: 2px;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  isolation: isolate;
 }
 
 .node-item:hover {

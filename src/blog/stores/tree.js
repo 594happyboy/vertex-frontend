@@ -9,79 +9,63 @@ import {
 import { sortDocuments as apiSortDocuments } from '../api/document';
 import { useDocStore } from './doc';
 
+// 通用的树遍历工具函数
+function traverseTree(nodes, callback) {
+  for (const node of nodes) {
+    const result = callback(node);
+    if (result !== undefined) return result;
+    
+    if (node.children?.length > 0) {
+      const found = traverseTree(node.children, callback);
+      if (found !== undefined) return found;
+    }
+  }
+  return undefined;
+}
+
 export const useTreeStore = defineStore('tree', {
   state: () => ({
-    tree: [], // 完整目录树（包含分组和文档）
-    cached: false, // 数据是否来自缓存
-    expandedKeys: [], // 展开的节点 ID
-    selectedId: null, // 当前选中的节点 ID
-    selectedType: null, // 'group' | 'document'
+    tree: [],
+    cached: false,
+    expandedKeys: [],
+    selectedId: null,
+    selectedType: null,
     loading: false,
     error: null,
   }),
 
   getters: {
-    // 扁平化的所有节点列表（用于快速查找）
+    // 扁平化的所有节点列表
     flatNodes: (state) => {
       const result = [];
-      const traverse = (nodes) => {
-        nodes.forEach((node) => {
-          result.push(node);
-          if (node.children && node.children.length > 0) {
-            traverse(node.children);
-          }
-        });
-      };
-      traverse(state.tree);
+      traverseTree(state.tree, (node) => {
+        result.push(node);
+      });
       return result;
     },
 
     // 根据 ID 和类型查找节点
     findNodeById: (state) => (id, type = null) => {
-      const traverse = (nodes) => {
-        for (const node of nodes) {
-          const matchType = !type || node.nodeType?.toUpperCase() === type.toUpperCase();
-          if (node.id === id && matchType) {
-            return node;
-          }
-          if (node.children && node.children.length > 0) {
-            const found = traverse(node.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      return traverse(state.tree);
+      return traverseTree(state.tree, (node) => {
+        const matchType = !type || node.nodeType?.toUpperCase() === type.toUpperCase();
+        return (node.id === id && matchType) ? node : undefined;
+      }) || null;
     },
 
     // 获取当前选中的节点
-    selectedNode: (state) => {
-      if (!state.selectedId) return null;
-      const traverse = (nodes) => {
-        for (const node of nodes) {
-          if (node.id === state.selectedId) return node;
-          if (node.children && node.children.length > 0) {
-            const found = traverse(node.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      return traverse(state.tree);
+    selectedNode() {
+      return this.selectedId ? this.findNodeById(this.selectedId) : null;
     },
   },
 
   actions: {
-    // 检查文档是否存在于树中
-    documentExistsInTree(docId) {
-      const found = this.findNodeById(docId, 'DOCUMENT');
-      return !!found;
-    },
-
     // 检查并关闭不存在的文档
     checkAndCloseDoc() {
       const docStore = useDocStore();
-      if (docStore.currentDoc && !this.documentExistsInTree(docStore.currentDoc.id)) {
+      if (!docStore.currentDoc) return;
+      
+      const docExists = !!this.findNodeById(docStore.currentDoc.id, 'DOCUMENT');
+      if (!docExists) {
         docStore.closeDoc();
         this.selectedId = null;
         this.selectedType = null;
@@ -176,11 +160,9 @@ export const useTreeStore = defineStore('tree', {
     // 展开/收起节点
     toggleExpand(id) {
       const index = this.expandedKeys.indexOf(id);
-      if (index > -1) {
-        this.expandedKeys.splice(index, 1);
-      } else {
-        this.expandedKeys.push(id);
-      }
+      index > -1 
+        ? this.expandedKeys.splice(index, 1)
+        : this.expandedKeys.push(id);
     },
 
     // 展开节点

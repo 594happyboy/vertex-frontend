@@ -6,20 +6,21 @@
         <Icon icon="mdi:file-document-multiple-outline" />
       </div>
       <h3>选择或创建一个文档</h3>
-      <p>从左侧知识目录中挑选内容，或点击“新建文档”开始创作。</p>
+      <p>从左侧知识目录中挑选内容，或点击"新建文档"开始创作。</p>
     </div>
 
     <div v-else class="workspace-content">
-      <DocToolbar />
-      <div class="doc-viewer-container">
-        <div class="viewer-surface">
-          <MdEditor v-if="isEditing" />
-          <MdViewer v-else-if="currentDoc.type === 'md' || currentDoc.type === 'txt'" />
-          <PdfViewer v-else-if="currentDoc.type === 'pdf'" />
-          <div v-else class="viewer-placeholder">
-            <Icon icon="mdi:file-question-outline" />
-            <span>不支持的文档类型</span>
-          </div>
+      <div class="viewer-surface">
+        <!-- Markdown 文档（包含工具栏） -->
+        <MdContainer v-if="currentDoc.type === 'md' || currentDoc.type === 'txt'" />
+        
+        <!-- PDF 文档（包含工具栏） -->
+        <PdfViewer v-else-if="currentDoc.type === 'pdf'" />
+        
+        <!-- 不支持的文档类型 -->
+        <div v-else class="viewer-placeholder">
+          <Icon icon="mdi:file-question-outline" />
+          <span>不支持的文档类型</span>
         </div>
       </div>
     </div>
@@ -30,15 +31,12 @@
 import { computed } from 'vue';
 import { Icon } from '@iconify/vue';
 import { useDocStore } from '../stores/doc';
-import DocToolbar from './DocToolbar.vue';
-import MdViewer from './MdViewer.vue';
-import MdEditor from './MdEditor.vue';
+import MdContainer from './MdContainer.vue';
 import PdfViewer from './PdfViewer.vue';
 
 const docStore = useDocStore();
 
 const currentDoc = computed(() => docStore.currentDoc);
-const isEditing = computed(() => docStore.isEditing);
 </script>
 
 <style scoped>
@@ -150,13 +148,6 @@ const isEditing = computed(() => docStore.isEditing);
   min-height: 0;
 }
 
-.doc-viewer-container {
-  position: relative;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-}
-
 .viewer-surface {
   position: relative;
   height: 100%;
@@ -164,19 +155,6 @@ const isEditing = computed(() => docStore.isEditing);
   border: none;
   background: rgba(255, 255, 255, 0.95);
   overflow: hidden;
-}
-
-.viewer-surface::after {
-  display: none;
-}
-
-.viewer-surface :deep(.md-editor),
-.viewer-surface :deep(.markdown-body),
-.viewer-surface :deep(canvas),
-.viewer-surface :deep(iframe) {
-  position: relative;
-  z-index: 1;
-  height: 100%;
 }
 
 .viewer-placeholder {
