@@ -499,6 +499,10 @@ watch(
   align-items: center;
   gap: var(--spacing-md);
   color: var(--color-text-secondary);
+  flex: 1;
+  width: 100%;
+  justify-content: center;
+  padding-top: calc(var(--spacing-lg) + 8px);
 }
 
 .pdf-loading .spin {
