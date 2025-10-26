@@ -102,7 +102,7 @@ import { useUiStore } from '../stores/ui';
 
 // PDF 配置常量
 const PDF_CONFIG = {
-  WORKER_SRC: `${import.meta.env.BASE_URL}pdfjs/build/pdf.worker.mjs`,
+  WORKER_SRC: `${window.location.origin}/pdfjs/build/pdf.worker.mjs`,
   SCALE: {
     DEFAULT: 1.5,
     MIN: 0.5,
@@ -292,6 +292,7 @@ watch(
   flex-direction: column;
   height: 100%;
   background-color: var(--color-bg-secondary);
+  position: relative;
 }
 
 /* 工具栏样式 */
@@ -482,10 +483,13 @@ watch(
 .pdf-content {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   overflow: auto;
   padding: var(--spacing-lg);
+  padding-top: calc(var(--spacing-lg) + 8px);
+  position: relative;
 }
 
 .pdf-loading,
