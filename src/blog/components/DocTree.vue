@@ -1,73 +1,74 @@
 <template>
   <div class="doc-tree">
     <div class="tree-surface">
-      <!-- 工具栏 -->
-      <div class="tree-toolbar">
-        <div class="search-row">
-          <div class="search-box">
-            <Icon icon="mdi:magnify" class="search-icon" />
-            <input v-model="searchKeyword" type="text" placeholder="搜索文档或分组..." />
-            <button v-if="searchKeyword" class="search-clear" type="button" @click="clearSearch">
-              <Icon icon="mdi:close-circle" />
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div class="tree-body">
-        <div v-if="loading" class="tree-status">
-          <div class="status-loader">
-            <span class="ring"></span>
-            <Icon icon="mdi:loading" class="spin" />
-          </div>
-          <span>正在加载目录结构...</span>
-        </div>
-
-        <div v-else-if="error" class="tree-status tree-status--error">
-          <Icon icon="mdi:alert-circle-outline" />
-          <span>{{ error }}</span>
-        </div>
-
-        <!-- 搜索无结果 -->
-        <div v-else-if="tree.length === 0 && isSearching" class="tree-status tree-status--no-results">
-          <Icon icon="mdi:text-box-search-outline" />
-          <p class="tree-status__text">未找到匹配的文档或分组</p>
-          <p class="tree-status__hint">试试其他搜索关键词</p>
-        </div>
-
-        <!-- 真正的空状态 -->
-        <div v-else-if="tree.length === 0 && !isSearching" class="tree-status tree-status--empty">
-          <Icon icon="mdi:folder-open-outline" />
-          <p class="tree-status__text">暂无分组，创建一个新的分组开始组织内容。</p>
-          <button class="btn-primary" @click="handleCreateGroup(null)">
-            <Icon icon="mdi:plus" />
-            <span>创建第一个分组</span>
-          </button>
-        </div>
-
-        <div v-else class="tree-list-wrapper">
-          <!-- 目录树顶部操作按钮 -->
+        <div class="tree-list-wrapper">
+          <!-- 顶部操作区：搜索框 + 操作按钮 -->
           <div class="tree-actions">
-            <button class="btn-tree-action" @click="$emit('refresh')" title="刷新目录">
-              <Icon icon="mdi:refresh" />
-            </button>
-            <button class="btn-tree-action btn-create-group" @click="handleCreateGroup(null)" title="新建分组">
-              <Icon icon="mdi:folder-plus" />
-            </button>
-            <button class="btn-tree-action btn-create-doc" @click="showCreateDocDialog = true" title="新建文档">
-              <Icon icon="mdi:file-document-plus" />
-            </button>
-            <button class="btn-tree-action btn-import" @click="showImportDialog = true" title="导入文档">
-              <Icon icon="mdi:file-import" />
-            </button>
+            <div class="search-box">
+              <Icon icon="mdi:magnify" class="search-icon" />
+              <input v-model="searchKeyword" type="text" placeholder="搜索文档或分组..." />
+              <button v-if="searchKeyword" class="search-clear" type="button" @click="clearSearch">
+                <Icon icon="mdi:close-circle" />
+              </button>
+            </div>
+            <div class="action-buttons">
+              <button class="btn-tree-action" @click="$emit('refresh')" title="刷新目录">
+                <Icon icon="mdi:refresh" />
+              </button>
+              <button class="btn-tree-action btn-create-group" @click="handleCreateGroup(null)" title="新建分组">
+                <Icon icon="mdi:folder-plus" />
+              </button>
+              <button class="btn-tree-action btn-create-doc" @click="showCreateDocDialog = true" title="新建文档">
+                <Icon icon="mdi:file-document-plus" />
+              </button>
+              <button class="btn-tree-action btn-import" @click="showImportDialog = true" title="导入文档">
+                <Icon icon="mdi:file-import" />
+              </button>
+            </div>
           </div>
           
-          <!-- 目录树列表 -->
-          <div class="tree-list" data-scroll>
-            <TreeNode v-for="node in tree" :key="`${node.nodeType}-${node.id}`" :node="node" :depth="0" :selected-id="selectedId"
-              :selected-type="selectedType" :expanded-keys="expandedKeys" @select="handleSelect" @toggle="handleToggle"
-              @create-group="handleCreateGroup" @create-doc="handleCreateDoc" @batch-import="handleBatchImport"
-              @rename="handleRename" @delete="handleDelete" />
+          <!-- 目录树列表（带状态遮罩） -->
+          <div class="tree-list-container">
+            <!-- Loading 状态 -->
+            <div v-if="loading" class="tree-status">
+              <div class="status-loader">
+                <span class="ring"></span>
+                <Icon icon="mdi:loading" class="spin" />
+              </div>
+              <span>正在加载目录结构...</span>
+            </div>
+
+            <!-- Error 状态 -->
+            <div v-else-if="error" class="tree-status tree-status--error">
+              <Icon icon="mdi:alert-circle-outline" />
+              <span>{{ error }}</span>
+            </div>
+
+            <!-- 搜索无结果 -->
+            <div v-else-if="tree.length === 0 && isSearching" class="tree-status tree-status--no-results">
+              <Icon icon="mdi:text-box-search-outline" />
+              <p class="tree-status__text">未找到匹配的文档或分组</p>
+              <p class="tree-status__hint">试试其他搜索关键词</p>
+            </div>
+
+            <!-- 真正的空状态 -->
+            <div v-else-if="tree.length === 0 && !isSearching" class="tree-status tree-status--empty">
+              <Icon icon="mdi:folder-open-outline" />
+              <p class="tree-status__text">暂无分组，创建一个新的分组开始组织内容。</p>
+              <button class="btn-primary" @click="handleCreateGroup(null)">
+                <Icon icon="mdi:plus" />
+                <span>创建第一个分组</span>
+              </button>
+            </div>
+
+            <!-- 目录树列表 -->
+            <div v-else class="tree-list" data-scroll>
+              <TreeNode v-for="node in tree" :key="`${node.nodeType}-${node.id}`" :node="node" :depth="0" :selected-id="selectedId"
+                :selected-type="selectedType" :expanded-keys="expandedKeys" @select="handleSelect" @toggle="handleToggle"
+                @create-group="handleCreateGroup" @create-doc="handleCreateDoc" @batch-import="handleBatchImport"
+                @rename="handleRename" @delete="handleDelete" />
+            </div>
           </div>
         </div>
       </div>
@@ -478,53 +479,7 @@ async function handleBatchFileSelect(event) {
   display: none;
 }
 
-/* 工具栏 */
-.tree-toolbar {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(226, 233, 255, 0.5);
-  flex-shrink: 0;
-  margin-bottom: 12px;
-}
-
-.btn-create-new {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: none;
-  background: linear-gradient(135deg, rgba(108, 126, 255, 0.96), rgba(68, 148, 255, 0.92));
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.btn-create-new :deep(svg) {
-  font-size: 20px;
-}
-
-.btn-create-new:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 30px -20px rgba(61, 109, 255, 0.7);
-}
-
-.search-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+/* 搜索框样式 */
 .search-box {
   position: relative;
   display: flex;
@@ -607,14 +562,21 @@ async function handleBatchFileSelect(event) {
   overflow: hidden;
 }
 
-/* 目录树顶部操作按钮 */
+/* 目录树顶部操作区（搜索框 + 操作按钮） */
 .tree-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(226, 233, 255, 0.5);
+  background: rgba(248, 250, 255, 0.6);
+  flex-shrink: 0;
+}
+
+.action-buttons {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px;
-  border-bottom: 1px solid rgba(226, 233, 255, 0.5);
-  background: rgba(248, 250, 255, 0.6);
 }
 
 .btn-tree-action {
@@ -675,8 +637,22 @@ async function handleBatchFileSelect(event) {
   border-color: rgba(249, 115, 22, 0.5);
 }
 
-.tree-status {
+/* 目录树列表容器（包含状态和列表） */
+.tree-list-container {
   flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tree-status {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -685,6 +661,8 @@ async function handleBatchFileSelect(event) {
   padding: 48px 24px;
   text-align: center;
   color: rgba(33, 42, 110, 0.6);
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 10;
 }
 
 .tree-status--error {
@@ -766,6 +744,7 @@ async function handleBatchFileSelect(event) {
   overflow-y: auto;
   padding: 8px;
   min-height: 0;
+  width: 100%;
 }
 
 .tree-list[data-scroll]::-webkit-scrollbar {
