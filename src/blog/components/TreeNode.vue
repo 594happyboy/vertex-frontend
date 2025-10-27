@@ -287,7 +287,8 @@ const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value
   align-items: center;
 }
 
-.node-item:hover .node-actions {
+.node-item:hover .node-actions,
+.node-actions:has(.action-menu) {
   display: inline-flex;
 }
 
@@ -320,7 +321,7 @@ const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value
   right: 0;
   min-width: 150px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.96);
+  background: #ffffff;
   border: 1px solid rgba(220, 230, 255, 0.85);
   box-shadow: 0 20px 38px -26px rgba(20, 28, 72, 0.55);
   backdrop-filter: blur(14px);
