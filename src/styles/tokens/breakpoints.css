@@ -1,0 +1,14 @@
+/**
+ * 响应式断点定义
+ * 只保留手机和PC两种设备适配
+ */
+
+:root {
+  /* 断点值 - 768px 以下为手机，以上为PC */
+  --breakpoint-mobile: 768px;
+  
+  /* 容器最大宽度 */
+  --container-mobile: 100%;
+  --container-desktop: 1280px;
+}
+

@@ -1,0 +1,179 @@
+/**
+ * 响应式工具类
+ * 提供常用的响应式显示/隐藏和布局类
+ */
+
+/* ========== 显示/隐藏工具类 ========== */
+
+/* PC端显示，移动端隐藏 */
+.desktop-only {
+  display: initial;
+}
+
+/* 移动端显示，PC端隐藏 */
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .mobile-only {
+    display: initial;
+  }
+}
+
+/* 平板及以下隐藏 */
+.tablet-up {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .tablet-up {
+    display: initial;
+  }
+}
+
+/* ========== 响应式间距工具类 ========== */
+
+.spacing-responsive-xs {
+  padding: var(--spacing-xs);
+}
+
+.spacing-responsive-sm {
+  padding: var(--spacing-sm);
+}
+
+.spacing-responsive-md {
+  padding: var(--spacing-md);
+}
+
+.spacing-responsive-lg {
+  padding: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .spacing-responsive-xs {
+    padding: var(--spacing-mobile-xs);
+  }
+  
+  .spacing-responsive-sm {
+    padding: var(--spacing-mobile-sm);
+  }
+  
+  .spacing-responsive-md {
+    padding: var(--spacing-mobile-md);
+  }
+  
+  .spacing-responsive-lg {
+    padding: var(--spacing-mobile-lg);
+  }
+}
+
+/* ========== 响应式文字工具类 ========== */
+
+.text-responsive-sm {
+  font-size: var(--font-size-sm);
+}
+
+.text-responsive-base {
+  font-size: var(--font-size-base);
+}
+
+.text-responsive-md {
+  font-size: var(--font-size-md);
+}
+
+.text-responsive-lg {
+  font-size: var(--font-size-lg);
+}
+
+@media (max-width: 768px) {
+  .text-responsive-sm {
+    font-size: var(--font-size-mobile-sm);
+  }
+  
+  .text-responsive-base {
+    font-size: var(--font-size-mobile-base);
+  }
+  
+  .text-responsive-md {
+    font-size: var(--font-size-mobile-md);
+  }
+  
+  .text-responsive-lg {
+    font-size: var(--font-size-mobile-lg);
+  }
+}
+
+/* ========== 响应式图标工具类 ========== */
+
+.icon-responsive-sm {
+  font-size: var(--icon-size-sm);
+}
+
+.icon-responsive-md {
+  font-size: var(--icon-size-md);
+}
+
+.icon-responsive-lg {
+  font-size: var(--icon-size-lg);
+}
+
+@media (max-width: 768px) {
+  .icon-responsive-sm {
+    font-size: var(--icon-size-mobile-sm);
+  }
+  
+  .icon-responsive-md {
+    font-size: var(--icon-size-mobile-md);
+  }
+  
+  .icon-responsive-lg {
+    font-size: var(--icon-size-mobile-lg);
+  }
+}
+
+/* ========== 响应式按钮工具类 ========== */
+
+.btn-responsive {
+  padding: var(--btn-padding-md);
+  font-size: var(--font-size-sm);
+  height: var(--btn-height-md);
+}
+
+@media (max-width: 768px) {
+  .btn-responsive {
+    padding: var(--btn-padding-mobile-md);
+    font-size: var(--font-size-mobile-base);
+    height: var(--btn-height-mobile-md);
+    min-width: var(--touch-target-min);
+  }
+}
+
+/* ========== 响应式布局工具类 ========== */
+
+.flex-responsive {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .flex-responsive {
+    gap: var(--spacing-mobile-md);
+  }
+}
+
+.grid-responsive {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .grid-responsive {
+    gap: var(--spacing-mobile-md);
+  }
+}
+

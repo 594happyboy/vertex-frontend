@@ -6,6 +6,7 @@ import {
   updateDocumentFile as apiUpdateDocumentFile,
   deleteDocument as apiDeleteDocument,
 } from '../api/document';
+import { getAccessToken } from '@/api/request';
 
 export const useDocStore = defineStore('doc', {
   state: () => ({
@@ -15,12 +16,18 @@ export const useDocStore = defineStore('doc', {
     saving: false,
     dirty: false, // 是否有未保存的修改
     error: null,
+    // 自动保存相关状态
+    syncStatus: 'synced', // 'synced' | 'editing' | 'pending' | 'saving' | 'error'
+    lastSavedAt: null, // 最后保存时间
+    saveError: null, // 保存错误信息
+    autoSaveTimer: null, // 自动保存定时器
   }),
 
   getters: {
     isEditing: (state) => state.mode === 'edit',
-    canEdit: (state) => state.currentDoc && (state.currentDoc.type === 'md' || state.currentDoc.type === 'txt'),
+    canEdit: (state) => state.currentDoc && ['md', 'txt'].includes(state.currentDoc.type),
     docTitle: (state) => state.currentDoc?.title || '未命名文档',
+    isTextDoc: (state) => state.currentDoc && ['md', 'txt'].includes(state.currentDoc.type),
   },
 
   actions: {
@@ -29,10 +36,11 @@ export const useDocStore = defineStore('doc', {
       try {
         const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
         const url = filePath.startsWith('http') ? filePath : `${baseURL}${filePath}`;
+        const accessToken = getAccessToken();
         const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          },
+          headers: accessToken ? {
+            'Authorization': `Bearer ${accessToken}`,
+          } : {},
         });
         if (!response.ok) {
           throw new Error('加载文档内容失败');
@@ -47,19 +55,29 @@ export const useDocStore = defineStore('doc', {
     // 打开文档
     async openDoc(id) {
       try {
+        // 清除之前的自动保存定时器
+        if (this.autoSaveTimer) {
+          clearTimeout(this.autoSaveTimer);
+          this.autoSaveTimer = null;
+        }
+        
         const data = await getDocument(id);
         this.currentDoc = data;
         
-        // 如果是MD或TXT文档，从filePath加载内容
-        if ((data.type === 'md' || data.type === 'txt') && data.filePath) {
-          this.content = await this.loadDocumentContent(data.filePath);
-        } else {
-          this.content = '';
-        }
+        // 保存原始标题用于比较
+        this.currentDoc._originalTitle = data.title;
+        
+        // 如果是文本文档，从filePath加载内容
+        this.content = (['md', 'txt'].includes(data.type) && data.filePath) 
+          ? await this.loadDocumentContent(data.filePath)
+          : '';
         
         this.mode = 'view';
         this.dirty = false;
         this.error = null;
+        this.syncStatus = 'synced';
+        this.saveError = null;
+        this.lastSavedAt = null;
         return data;
       } catch (error) {
         this.error = error.message;
@@ -71,19 +89,27 @@ export const useDocStore = defineStore('doc', {
     // 创建文档（新版API，统一使用文件上传）
     async createDoc(title, file, groupId = null) {
       try {
+        // 清除之前的自动保存定时器
+        if (this.autoSaveTimer) {
+          clearTimeout(this.autoSaveTimer);
+          this.autoSaveTimer = null;
+        }
+        
         const data = await apiCreateDocument(title, file, groupId);
         this.currentDoc = data;
         
-        // 如果是MD或TXT文档，从filePath加载内容
-        if ((data.type === 'md' || data.type === 'txt') && data.filePath) {
-          this.content = await this.loadDocumentContent(data.filePath);
-          this.mode = 'edit'; // 新建文本文档默认进入编辑模式
-        } else {
-          this.content = '';
-          this.mode = 'view'; // PDF文档查看模式
-        }
+        // 保存原始标题用于比较
+        this.currentDoc._originalTitle = data.title;
         
+        const isTextDoc = ['md', 'txt'].includes(data.type);
+        this.content = (isTextDoc && data.filePath) 
+          ? await this.loadDocumentContent(data.filePath)
+          : '';
+        this.mode = isTextDoc ? 'edit' : 'view';
         this.dirty = false;
+        this.syncStatus = 'synced';
+        this.saveError = null;
+        this.lastSavedAt = null;
         return data;
       } catch (error) {
         console.error('Failed to create document:', error);
@@ -97,24 +123,22 @@ export const useDocStore = defineStore('doc', {
 
       this.saving = true;
       try {
-        // 如果是MD或TXT文档且内容有变化，需要更新文件
-        if ((this.currentDoc.type === 'md' || this.currentDoc.type === 'txt') && this.dirty) {
-          const fileExtension = this.currentDoc.type === 'md' ? '.md' : '.txt';
-          const mimeType = this.currentDoc.type === 'md' ? 'text/markdown' : 'text/plain';
+        // 如果是文本文档且内容有变化，需要更新文件
+        if (this.isTextDoc && this.dirty) {
+          const config = {
+            md: { ext: '.md', mime: 'text/markdown' },
+            txt: { ext: '.txt', mime: 'text/plain' }
+          }[this.currentDoc.type];
+
+          const blob = new Blob([this.content], { type: config.mime });
+          const file = new File([blob], `${this.currentDoc.title}${config.ext}`, { type: config.mime });
           
-          // 将内容转为文件
-          const blob = new Blob([this.content], { type: mimeType });
-          const file = new File([blob], `${this.currentDoc.title}${fileExtension}`, { type: mimeType });
-          
-          // 更新文档文件
-          const fileUpdateData = await apiUpdateDocumentFile(this.currentDoc.id, file);
-          this.currentDoc = fileUpdateData;
+          this.currentDoc = await apiUpdateDocumentFile(this.currentDoc.id, file);
         }
         
-        // 如果有其他元数据更新，调用更新接口
+        // 如果有元数据更新
         if (Object.keys(updates).length > 0) {
-          const data = await apiUpdateDocument(this.currentDoc.id, updates);
-          this.currentDoc = data;
+          this.currentDoc = await apiUpdateDocument(this.currentDoc.id, updates);
         }
         
         this.dirty = false;
@@ -127,10 +151,104 @@ export const useDocStore = defineStore('doc', {
       }
     },
 
+    // 更新文档标题（带自动保存）
+    updateTitle(newTitle) {
+      if (!this.currentDoc || this.currentDoc.title === newTitle) return;
+      
+      this.currentDoc.title = newTitle;
+      this.dirty = true;
+      this.syncStatus = 'editing';
+      this.scheduleAutoSave();
+    },
+
     // 更新文档内容（编辑器输入时调用）
     updateContent(newContent) {
+      if (this.content === newContent) return;
+      
       this.content = newContent;
       this.dirty = true;
+      this.syncStatus = 'editing';
+      this.scheduleAutoSave();
+    },
+
+    // 调度自动保存（防抖1秒）
+    scheduleAutoSave() {
+      if (this.autoSaveTimer) {
+        clearTimeout(this.autoSaveTimer);
+      }
+      
+      this.syncStatus = 'pending';
+      
+      this.autoSaveTimer = setTimeout(async () => {
+        await this.performAutoSave();
+      }, 1000);
+    },
+
+    // 执行自动保存
+    async performAutoSave() {
+      if (!this.currentDoc || !this.dirty) {
+        this.syncStatus = 'synced';
+        return;
+      }
+      
+      this.syncStatus = 'saving';
+      this.saving = true;
+      this.saveError = null;
+      
+      try {
+        // 检查标题是否变化
+        const titleChanged = this.currentDoc.title !== this.currentDoc._originalTitle;
+        const contentChanged = this.dirty;
+        
+        // 如果标题变了，需要更新元数据
+        if (titleChanged) {
+          const updatedDoc = await apiUpdateDocument(this.currentDoc.id, { 
+            title: this.currentDoc.title 
+          });
+          this.currentDoc = { ...updatedDoc, _originalTitle: updatedDoc.title };
+        }
+        
+        // 如果内容变了，需要更新文件
+        if (contentChanged && this.isTextDoc) {
+          const config = {
+            md: { ext: '.md', mime: 'text/markdown' },
+            txt: { ext: '.txt', mime: 'text/plain' }
+          }[this.currentDoc.type];
+          
+          const blob = new Blob([this.content], { type: config.mime });
+          const file = new File([blob], `${this.currentDoc.title}${config.ext}`, { 
+            type: config.mime 
+          });
+          
+          await apiUpdateDocumentFile(this.currentDoc.id, file);
+        }
+        
+        // 保存成功
+        this.dirty = false;
+        this.syncStatus = 'synced';
+        this.lastSavedAt = new Date();
+        
+        // 更新左侧树（如果标题变了）
+        if (titleChanged) {
+          // 动态导入避免循环依赖
+          const { useTreeStore } = await import('./tree');
+          const treeStore = useTreeStore();
+          await treeStore.fetchTree();
+        }
+        
+      } catch (error) {
+        console.error('Auto save failed:', error);
+        this.syncStatus = 'error';
+        this.saveError = error.message || '保存失败';
+        // 保持 dirty 状态，允许重试
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    // 手动重试保存
+    async retrySave() {
+      await this.performAutoSave();
     },
 
     // 切换编辑/查看模式
@@ -160,11 +278,20 @@ export const useDocStore = defineStore('doc', {
 
     // 关闭当前文档
     closeDoc() {
+      // 清除自动保存定时器
+      if (this.autoSaveTimer) {
+        clearTimeout(this.autoSaveTimer);
+        this.autoSaveTimer = null;
+      }
+      
       this.currentDoc = null;
       this.content = '';
       this.mode = 'view';
       this.dirty = false;
       this.error = null;
+      this.syncStatus = 'synced';
+      this.saveError = null;
+      this.lastSavedAt = null;
     },
   },
 });

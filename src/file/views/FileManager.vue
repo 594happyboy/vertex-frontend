@@ -1,5 +1,12 @@
 <template>
   <div class="file-manager">
+    <!-- 移动端侧边栏遮罩 -->
+    <div 
+      v-if="store.activeView === 'files' && !sidebarCollapsed" 
+      class="sidebar-overlay" 
+      @click="uiStore.toggleSidebar()"
+    ></div>
+
     <!-- 左侧边栏 - 只在文件库视图显示 -->
     <aside 
       v-if="store.activeView === 'files'" 
@@ -200,6 +207,9 @@ const dialogs = reactive({
 });
 
 onMounted(async () => {
+  // 初始化侧边栏状态（移动端默认关闭）
+  uiStore.initSidebar();
+  
   try {
     await store.initialize();
   } catch (error) {
@@ -534,12 +544,61 @@ function countFolders(folders) {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   overflow: hidden;
+  z-index: 10;
 }
 
 .file-sidebar.collapsed {
   width: 0;
   opacity: 0;
   border-right-color: transparent;
+}
+
+/* 移动端抽屉式侧边栏 */
+@media (max-width: 768px) {
+  .file-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 85%;
+    max-width: 320px;
+    z-index: 100;
+    transform: translateX(-100%);
+    opacity: 1;
+    border-right-color: rgba(200, 210, 255, 0.3);
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .file-sidebar.collapsed {
+    width: 85%;
+    max-width: 320px;
+    opacity: 1;
+    transform: translateX(-100%);
+  }
+
+  .file-sidebar:not(.collapsed) {
+    transform: translateX(0);
+  }
+}
+
+/* 移动端侧边栏遮罩 */
+.sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 99;
+    backdrop-filter: blur(2px);
+  }
 }
 
 .sidebar-header {
@@ -627,6 +686,13 @@ function countFolders(folders) {
   height: 100%;
 }
 
+@media (max-width: 768px) {
+  .files-view {
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -634,6 +700,13 @@ function countFolders(folders) {
   gap: 20px;
   padding: 24px 0;
   margin-top: auto;
+}
+
+@media (max-width: 768px) {
+  .pagination {
+    gap: 12px;
+    padding: 20px 0;
+  }
 }
 
 .page-btn {
@@ -653,6 +726,18 @@ function countFolders(folders) {
 
 .page-btn :deep(svg) {
   font-size: 18px;
+}
+
+@media (max-width: 768px) {
+  .page-btn {
+    padding: 10px 16px;
+    gap: 4px;
+    font-size: 13px;
+  }
+  
+  .page-btn :deep(svg) {
+    font-size: 20px;
+  }
 }
 
 .page-btn:hover:not(:disabled) {
@@ -720,6 +805,15 @@ function countFolders(folders) {
   justify-content: center;
 }
 
+@media (max-width: 768px) {
+  .fab-view-switch {
+    bottom: 84px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+  }
+}
+
 .fab-view-switch:hover {
   transform: translateY(-4px) scale(1.05);
   box-shadow: 0 12px 32px rgba(96, 118, 255, 0.5);
@@ -748,5 +842,11 @@ function countFolders(folders) {
 
 .fab-view-switch:hover .fab-icon {
   transform: scale(1.1) rotate(5deg);
+}
+
+@media (max-width: 768px) {
+  .fab-icon {
+    font-size: 24px;
+  }
 }
 </style>

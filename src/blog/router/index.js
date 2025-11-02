@@ -63,29 +63,25 @@ const router = createRouter({
 });
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
   
-  // 检查是否需要认证
-  if (to.meta.requiresAuth) {
-    if (!authStore.isAuthenticated) {
-      // 未认证，跳转到登录页
-      next({
-        path: '/login',
-        query: { redirect: to.fullPath },
-      });
-    } else {
-      next();
-    }
-  } else {
-    // 不需要认证的页面
-    if (to.path === '/login' && authStore.isAuthenticated) {
-      // 已登录用户访问登录页，重定向到管理页
-      next('/me');
-    } else {
-      next();
-    }
+  // 等待认证状态初始化完成（首次访问时从 RefreshToken 恢复登录状态）
+  if (!authStore.isInitialized) {
+    await authStore.init();
   }
+  
+  // 已登录用户访问登录页，重定向到管理页
+  if (to.path === '/login' && authStore.isAuthenticated) {
+    return next('/me');
+  }
+  
+  // 检查是否需要认证
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return next({ path: '/login', query: { redirect: to.fullPath } });
+  }
+  
+  next();
 });
 
 export default router;

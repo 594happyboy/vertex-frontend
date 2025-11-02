@@ -82,6 +82,9 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { Icon } from '@iconify/vue';
+import { useResponsive } from '@/composables';
+
+const { isMobile } = useResponsive();
 
 const props = defineProps({
   node: {
@@ -197,22 +200,30 @@ const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-2xs) var(--spacing-xs);
   margin-bottom: 2px;
-  border-radius: 10px;
+  border-radius: var(--border-radius-lg);
   cursor: pointer;
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: var(--transition-base);
   isolation: isolate;
+  min-height: var(--touch-target-min);
+}
+
+@media (max-width: 768px) {
+  .node-item {
+    gap: var(--spacing-mobile-xs);
+    padding: var(--spacing-mobile-xs) var(--spacing-mobile-sm);
+  }
 }
 
 .node-item:hover {
-  background: rgba(234, 239, 255, 0.7);
+  background: var(--color-bg-hover);
 }
 
 .node-item.selected {
-  background: linear-gradient(135deg, rgba(109, 130, 255, 0.16), rgba(54, 188, 255, 0.14));
-  box-shadow: inset 0 0 0 1px rgba(109, 130, 255, 0.38);
+  background: var(--gradient-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .node-group.selected {
@@ -222,7 +233,7 @@ const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value
 .node-leading {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-2xs);
   flex: 1;
   min-width: 0;
 }
@@ -231,17 +242,17 @@ const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  border-radius: var(--border-radius-sm);
   border: none;
-  background: rgba(187, 198, 255, 0.22);
-  color: #25307a;
-  transition: transform 0.2s ease;
+  background: var(--color-primary-light);
+  color: var(--color-text-primary);
+  transition: var(--transition-fast);
 }
 
 .node-expand :deep(svg) {
-  font-size: 14px;
+  font-size: var(--icon-size-sm);
 }
 
 .node-expand:hover {
@@ -249,36 +260,55 @@ const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value
 }
 
 .node-spacer {
-  width: 18px;
+  width: var(--icon-size-md);
 }
 
 .node-avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
-  background: rgba(194, 206, 255, 0.35);
-  color: #2b3270;
+  width: var(--icon-size-xl);
+  height: var(--icon-size-xl);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+  .node-avatar {
+    width: var(--icon-size-mobile-xl);
+    height: var(--icon-size-mobile-xl);
+  }
 }
 
 .node-avatar--group {
-  background: linear-gradient(135deg, rgba(89, 114, 255, 0.2), rgba(87, 188, 255, 0.22));
+  background: var(--gradient-primary);
 }
 
 .node-icon {
-  font-size: 14px;
+  font-size: var(--icon-size-sm);
+}
+
+@media (max-width: 768px) {
+  .node-icon {
+    font-size: var(--icon-size-mobile-sm);
+  }
 }
 
 .node-label {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
-  color: #222a68;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .node-label {
+    font-size: var(--font-size-mobile-sm);
+  }
 }
 
 .node-actions {
@@ -296,23 +326,36 @@ const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 8px;
-  border: 1px solid rgba(194, 204, 255, 0.72);
-  background: rgba(255, 255, 255, 0.95);
-  color: #2b3270;
+  width: var(--btn-height-xs);
+  height: var(--btn-height-xs);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: var(--transition-base);
+}
+
+@media (max-width: 768px) {
+  .action-btn {
+    width: var(--btn-height-mobile-xs);
+    height: var(--btn-height-mobile-xs);
+  }
 }
 
 .action-btn :deep(svg) {
-  font-size: 14px;
+  font-size: var(--icon-size-sm);
+}
+
+@media (max-width: 768px) {
+  .action-btn :deep(svg) {
+    font-size: var(--icon-size-mobile-sm);
+  }
 }
 
 .action-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 26px -18px rgba(26, 42, 116, 0.55);
+  box-shadow: var(--shadow-sm);
 }
 
 .action-menu {
@@ -320,57 +363,72 @@ const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value
   top: calc(100% + 4px);
   right: 0;
   min-width: 150px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid rgba(220, 230, 255, 0.85);
-  box-shadow: 0 20px 38px -26px rgba(20, 28, 72, 0.55);
+  border-radius: var(--border-radius-xl);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xl);
   backdrop-filter: blur(14px);
-  padding: 6px;
-  z-index: 40;
+  padding: var(--spacing-2xs);
+  z-index: var(--z-dropdown);
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-xs);
   width: 100%;
-  padding: 6px 8px;
-  border-radius: 8px;
+  padding: var(--spacing-2xs) var(--spacing-xs);
+  border-radius: var(--border-radius-md);
   border: none;
   background: transparent;
-  color: #202764;
-  font-size: 12px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
   text-align: left;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: var(--transition-fast);
+  min-height: var(--touch-target-min);
+}
+
+@media (max-width: 768px) {
+  .menu-item {
+    gap: var(--spacing-mobile-xs);
+    padding: var(--spacing-mobile-xs) var(--spacing-mobile-sm);
+    font-size: var(--font-size-mobile-sm);
+  }
 }
 
 .menu-item :deep(svg) {
-  font-size: 14px;
+  font-size: var(--icon-size-sm);
+}
+
+@media (max-width: 768px) {
+  .menu-item :deep(svg) {
+    font-size: var(--icon-size-mobile-sm);
+  }
 }
 
 .menu-item:hover {
-  background: rgba(214, 222, 255, 0.6);
+  background: var(--color-bg-hover);
 }
 
 .menu-item.danger {
-  color: #d64545;
+  color: var(--color-danger);
 }
 
 .menu-item.danger:hover {
-  background: rgba(255, 229, 229, 0.9);
-  color: #c23b3b;
+  background: var(--color-danger-light);
+  color: var(--color-danger);
 }
 
 .menu-divider {
   height: 1px;
-  margin: 6px 0;
-  background: rgba(207, 217, 255, 0.6);
+  margin: var(--spacing-2xs) 0;
+  background: var(--color-border);
 }
 
 .fade-scale-enter-active,
 .fade-scale-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: var(--transition-fast);
 }
 
 .fade-scale-enter-from,
@@ -380,9 +438,17 @@ const handleDelete = () => handleMenuAction('delete', props.node, nodeType.value
 }
 
 .node-children {
-  margin-left: 10px;
-  padding-left: 5px;
-  border-left: 1px dashed rgba(188, 200, 255, 0.6);
+  margin-left: var(--spacing-sm);
+  padding-left: var(--spacing-xs);
+  border-left: 1px dashed var(--color-border);
+}
+
+@media (max-width: 768px) {
+  .node-children {
+    margin-left: var(--spacing-mobile-xs);
+    padding-left: var(--spacing-mobile-2xs);
+  }
 }
 </style>
+
 

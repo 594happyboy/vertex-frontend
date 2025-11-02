@@ -190,6 +190,13 @@ function handleDragEnd(fileId) {
   gap: 16px;
 }
 
+@media (max-width: 768px) {
+  .file-grid-inner {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+}
+
 /* 网格项动画 */
 .grid-item-enter-active {
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);

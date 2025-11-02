@@ -81,10 +81,13 @@
 <script setup>
 import { ref } from 'vue';
 import { Icon } from '@iconify/vue';
+import { useResponsive } from '@/composables';
 import { useTreeStore } from '../stores/tree';
 import { useDocStore } from '../stores/doc';
 import { useUiStore } from '../stores/ui';
 import { batchUploadDocuments } from '../api/document';
+
+const { isMobile } = useResponsive();
 
 const emit = defineEmits(['close']);
 
@@ -99,57 +102,44 @@ const uploading = ref(false);
 
 async function handleCreate(type) {
   try {
-    if (type === 'md') {
+    if (type === 'md' || type === 'txt') {
       emit('close');
       const title = prompt('请输入文档标题：');
-      if (!title || !title.trim()) return;
+      if (!title?.trim()) return;
       
-      // 创建空的Markdown文件
-      const initialContent = `# ${title}\n\n开始编写你的文档...`;
-      const blob = new Blob([initialContent], { type: 'text/markdown' });
-      const file = new File([blob], `${title}.md`, { type: 'text/markdown' });
-      
+      const file = createTextFile(title.trim(), type);
       const doc = await docStore.createDoc(title.trim(), file);
+      
       await treeStore.fetchTree();
       treeStore.selectNode(doc.id, 'document');
-      uiStore.showSuccess('Markdown 文档创建成功');
-    } else if (type === 'txt') {
-      emit('close');
-      const title = prompt('请输入文档标题：');
-      if (!title || !title.trim()) return;
       
-      // 创建空的TXT文件
-      const initialContent = '';
-      const blob = new Blob([initialContent], { type: 'text/plain' });
-      const file = new File([blob], `${title}.txt`, { type: 'text/plain' });
-      
-      const doc = await docStore.createDoc(title.trim(), file);
-      await treeStore.fetchTree();
-      treeStore.selectNode(doc.id, 'document');
-      uiStore.showSuccess('TXT 文档创建成功');
-    } else if (type === 'pdf') {
-      // 触发PDF文件选择
-      pdfInputRef.value?.click();
-    } else if (type === 'import') {
-      // 触发导入文件选择
-      importInputRef.value?.click();
-    } else if (type === 'batch') {
-      // 触发批量导入文件选择
-      batchInputRef.value?.click();
+      const typeName = type === 'md' ? 'Markdown' : 'TXT';
+      uiStore.showSuccess(`${typeName} 文档创建成功`);
+    } else {
+      const inputMap = { pdf: pdfInputRef, import: importInputRef, batch: batchInputRef };
+      inputMap[type]?.value?.click();
     }
   } catch (error) {
     uiStore.showError(error.message || '操作失败');
   }
 }
 
+// 工具函数：创建文本文件
+function createTextFile(title, type) {
+  const config = {
+    md: { content: `# ${title}\n\n开始编写你的文档...`, mime: 'text/markdown', ext: '.md' },
+    txt: { content: '', mime: 'text/plain', ext: '.txt' }
+  }[type];
+  
+  const blob = new Blob([config.content], { type: config.mime });
+  return new File([blob], `${title}${config.ext}`, { type: config.mime });
+}
+
 // 处理PDF文件选择
 async function handlePdfSelect(event) {
   const file = event.target.files?.[0];
   if (!file) return;
-
-  // 重置input，允许重复选择同一个文件
   event.target.value = '';
-
   await uploadDocument(file);
 }
 
@@ -158,14 +148,12 @@ async function handleImportSelect(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  // 重置input，允许重复选择同一个文件
   event.target.value = '';
 
-  // 根据文件扩展名判断类型
-  const fileName = file.name;
-  const fileExt = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+  const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+  const supportedTypes = ['.md', '.pdf', '.txt'];
   
-  if (fileExt !== '.md' && fileExt !== '.pdf' && fileExt !== '.txt') {
+  if (!supportedTypes.includes(fileExt)) {
     uiStore.showError('不支持的文件格式，仅支持 .md、.pdf 和 .txt');
     return;
   }
@@ -180,24 +168,17 @@ async function uploadDocument(file) {
   try {
     uploading.value = true;
     emit('close');
-    
-    // 显示上传提示
     uiStore.showInfo('文件上传中，请稍候...');
 
-    // 从文件名提取标题（去除扩展名）
-    const fileName = file.name;
-    const title = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-
-    // 创建文档（新版API统一使用文件上传）
+    const title = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
     const doc = await docStore.createDoc(title, file);
 
-    // 刷新树并选中新文档
     await treeStore.fetchTree();
     treeStore.selectNode(doc.id, 'document');
     
-    const fileExt = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
-    const docTypeName = fileExt === '.md' ? 'Markdown' : (fileExt === '.pdf' ? 'PDF' : 'TXT');
-    uiStore.showSuccess(`${docTypeName} 文档导入成功`);
+    const typeMap = { '.md': 'Markdown', '.pdf': 'PDF', '.txt': 'TXT' };
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    uiStore.showSuccess(`${typeMap[fileExt] || '文档'} 导入成功`);
   } catch (error) {
     console.error('Upload error:', error);
     uiStore.showError(error.message || '文件上传失败');
@@ -210,10 +191,7 @@ async function uploadDocument(file) {
 async function handleBatchSelect(event) {
   const file = event.target.files?.[0];
   if (!file) return;
-
-  // 重置input，允许重复选择同一个文件
   event.target.value = '';
-
   await handleBatchUpload(file);
 }
 
@@ -221,49 +199,30 @@ async function handleBatchSelect(event) {
 async function handleBatchUpload(file, parentGroupId = null) {
   if (uploading.value) return;
 
-  // 验证文件类型
-  if (!file.name.toLowerCase().endsWith('.zip')) {
-    uiStore.showError('请选择 ZIP 格式的压缩包');
-    return;
-  }
-
-  // 验证文件大小（最大100MB）
-  const maxSize = 100 * 1024 * 1024;
-  if (file.size > maxSize) {
-    uiStore.showError('文件大小超过限制（最大100MB）');
+  const validationError = validateBatchFile(file);
+  if (validationError) {
+    uiStore.showError(validationError);
     return;
   }
 
   try {
     uploading.value = true;
     emit('close');
-    
-    // 显示上传提示
     uiStore.showInfo('正在上传压缩包，请稍候...');
 
-    // 调用批量上传API
     const result = await batchUploadDocuments(file, parentGroupId);
-    
-    // 刷新文档树
     await treeStore.fetchTree();
     
-    // 显示结果
-    const { totalFiles, totalFolders, successCount, failedCount, items } = result;
-    
+    const { successCount, failedCount } = result;
     if (failedCount === 0) {
-      uiStore.showSuccess(
-        `批量导入成功！共导入 ${totalFolders} 个分组，${successCount} 个文档`
-      );
+      uiStore.showSuccess(`批量导入成功！共导入 ${result.totalFolders} 个分组，${successCount} 个文档`);
     } else {
-      // 显示详细的失败信息
-      const failedItems = items.filter(item => !item.success);
-      const failedMsg = failedItems.map(item => `${item.name}: ${item.message}`).join('\n');
-      
-      uiStore.showError(
-        `部分导入失败！成功：${successCount}，失败：${failedCount}\n${failedMsg}`
-      );
+      const failedMsg = result.items
+        .filter(item => !item.success)
+        .map(item => `${item.name}: ${item.message}`)
+        .join('\n');
+      uiStore.showError(`部分导入失败！成功：${successCount}，失败：${failedCount}\n${failedMsg}`);
     }
-    
   } catch (error) {
     console.error('Batch upload error:', error);
     uiStore.showError(error.message || '批量导入失败');
@@ -272,10 +231,15 @@ async function handleBatchUpload(file, parentGroupId = null) {
   }
 }
 
-// 导出供外部使用
-defineExpose({
-  handleBatchUpload
-});
+// 验证批量上传文件
+function validateBatchFile(file) {
+  const MAX_SIZE = 100 * 1024 * 1024;
+  if (!file.name.toLowerCase().endsWith('.zip')) return '请选择 ZIP 格式的压缩包';
+  if (file.size > MAX_SIZE) return '文件大小超过限制（最大100MB）';
+  return null;
+}
+
+defineExpose({ handleBatchUpload });
 </script>
 
 <style scoped>
@@ -297,7 +261,7 @@ defineExpose({
   max-width: 500px;
   max-height: 90vh;
   background-color: var(--color-bg-primary);
-  border-radius: var(--radius-xl);
+  border-radius: var(--border-radius-xl);
   box-shadow: var(--shadow-xl);
   overflow: hidden;
   display: flex;
@@ -313,22 +277,42 @@ defineExpose({
   flex-shrink: 0;
 }
 
+@media (max-width: 768px) {
+  .dialog-header {
+    padding: var(--spacing-mobile-md);
+  }
+}
+
 .dialog-header h3 {
-  font-size: var(--text-xl);
+  font-size: var(--font-size-xl);
   font-weight: 600;
   color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+  .dialog-header h3 {
+    font-size: var(--font-size-mobile-lg);
+  }
 }
 
 .btn-close {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
+  width: var(--btn-height-sm);
+  height: var(--btn-height-sm);
+  border-radius: var(--border-radius-md);
   color: var(--color-text-secondary);
-  transition: all var(--transition-fast);
-  font-size: 20px;
+  transition: var(--transition-fast);
+  font-size: var(--icon-size-lg);
+}
+
+@media (max-width: 768px) {
+  .btn-close {
+    width: var(--btn-height-mobile-sm);
+    height: var(--btn-height-mobile-sm);
+    font-size: var(--icon-size-mobile-lg);
+  }
 }
 
 .btn-close:hover {
@@ -343,9 +327,21 @@ defineExpose({
   min-height: 0;
 }
 
+@media (max-width: 768px) {
+  .dialog-body {
+    padding: var(--spacing-mobile-md);
+  }
+}
+
 .create-options {
   display: grid;
   gap: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .create-options {
+    gap: var(--spacing-mobile-sm);
+  }
 }
 
 .create-option {
@@ -355,9 +351,17 @@ defineExpose({
   padding: var(--spacing-md);
   background-color: var(--color-bg-secondary);
   border: 2px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  transition: all var(--transition-fast);
+  border-radius: var(--border-radius-lg);
+  transition: var(--transition-fast);
   text-align: left;
+  min-height: var(--touch-target-min);
+}
+
+@media (max-width: 768px) {
+  .create-option {
+    gap: var(--spacing-mobile-sm);
+    padding: var(--spacing-mobile-sm) var(--spacing-mobile-md);
+  }
 }
 
 .create-option:hover:not(:disabled) {
@@ -371,9 +375,15 @@ defineExpose({
 }
 
 .option-icon {
-  font-size: 32px;
+  font-size: var(--icon-size-xl);
   color: var(--color-primary);
   flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .option-icon {
+    font-size: var(--icon-size-mobile-xl);
+  }
 }
 
 .option-content {
@@ -381,15 +391,28 @@ defineExpose({
 }
 
 .option-title {
-  font-size: var(--text-base);
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-text-primary);
   margin-bottom: var(--spacing-xs);
 }
 
+@media (max-width: 768px) {
+  .option-title {
+    font-size: var(--font-size-mobile-base);
+    margin-bottom: var(--spacing-mobile-2xs);
+  }
+}
+
 .option-desc {
-  font-size: var(--text-sm);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .option-desc {
+    font-size: var(--font-size-mobile-sm);
+  }
 }
 </style>
 

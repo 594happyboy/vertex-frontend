@@ -1,0 +1,36 @@
+/**
+ * 间距系统
+ * 基于 4px/8px 栅格系统
+ * 提供统一的间距标准
+ */
+
+:root {
+  /* 基础间距（PC端） - 8px 基准 */
+  --spacing-2xs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  
+  /* 移动端间距 - 更紧凑 */
+  --spacing-mobile-2xs: 4px;
+  --spacing-mobile-xs: 6px;
+  --spacing-mobile-sm: 10px;
+  --spacing-mobile-md: 12px;
+  --spacing-mobile-lg: 16px;
+  --spacing-mobile-xl: 24px;
+  --spacing-mobile-2xl: 32px;
+  
+  /* 组件内边距 */
+  --padding-component-sm: 8px 12px;
+  --padding-component-md: 12px 16px;
+  --padding-component-lg: 16px 24px;
+  
+  --padding-mobile-component-sm: 6px 10px;
+  --padding-mobile-component-md: 10px 14px;
+  --padding-mobile-component-lg: 12px 16px;
+}
+

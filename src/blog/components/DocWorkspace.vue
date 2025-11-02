@@ -30,10 +30,12 @@
 <script setup>
 import { computed } from 'vue';
 import { Icon } from '@iconify/vue';
+import { useResponsive } from '@/composables';
 import { useDocStore } from '../stores/doc';
 import MdContainer from './MdContainer.vue';
 import PdfViewer from './PdfViewer.vue';
 
+const { isMobile } = useResponsive();
 const docStore = useDocStore();
 
 const currentDoc = computed(() => docStore.currentDoc);
@@ -57,22 +59,30 @@ const currentDoc = computed(() => docStore.currentDoc);
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 40px 32px;
-  margin: 20px;
-  border-radius: 20px;
-  border: 1px dashed rgba(150, 168, 232, 0.5);
-  background: rgba(255, 255, 255, 0.8);
+  gap: var(--spacing-lg);
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  margin: var(--spacing-lg);
+  border-radius: var(--border-radius-2xl);
+  border: 1px dashed var(--color-border-hover);
+  background: var(--color-bg-secondary);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .empty-state {
+    gap: var(--spacing-mobile-md);
+    padding: var(--spacing-mobile-xl) var(--spacing-mobile-lg);
+    margin: var(--spacing-mobile-md);
+  }
 }
 
 .empty-state__decor {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(160px 160px at 80% 10%, rgba(96, 118, 255, 0.18), transparent 70%),
-    radial-gradient(220px 220px at 10% 90%, rgba(63, 191, 255, 0.16), transparent 75%);
+    radial-gradient(160px 160px at 80% 10%, var(--color-primary-light), transparent 70%),
+    radial-gradient(220px 220px at 10% 90%, var(--color-secondary-light), transparent 75%);
   opacity: 0.9;
 }
 
@@ -83,59 +93,105 @@ const currentDoc = computed(() => docStore.currentDoc);
   justify-content: center;
   width: 72px;
   height: 72px;
-  border-radius: 22px;
-  background: linear-gradient(135deg, rgba(96, 118, 255, 0.2), rgba(63, 191, 255, 0.18));
-  color: #273274;
+  border-radius: var(--border-radius-2xl);
+  background: var(--gradient-primary);
+  color: var(--color-text-primary);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
 
+@media (max-width: 768px) {
+  .empty-state__icon {
+    width: 64px;
+    height: 64px;
+  }
+}
+
 .empty-state__icon :deep(svg) {
-  font-size: 36px;
+  font-size: var(--icon-size-3xl);
+}
+
+@media (max-width: 768px) {
+  .empty-state__icon :deep(svg) {
+    font-size: var(--icon-size-2xl);
+  }
 }
 
 .empty-state h3 {
   position: relative;
   margin: 0;
-  font-size: 20px;
+  font-size: var(--font-size-xl);
   font-weight: 700;
-  color: #21286a;
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+  .empty-state h3 {
+    font-size: var(--font-size-mobile-lg);
+  }
 }
 
 .empty-state p {
   position: relative;
   margin: 0;
-  font-size: 14px;
-  color: rgba(31, 39, 102, 0.68);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .empty-state p {
+    font-size: var(--font-size-mobile-base);
+  }
 }
 
 .empty-actions {
   position: relative;
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+  .empty-actions {
+    gap: var(--spacing-mobile-xs);
+  }
 }
 
 .btn-empty {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  border-radius: 16px;
-  border: 1px solid rgba(118, 140, 255, 0.7);
-  background: rgba(255, 255, 255, 0.95);
-  color: #263072;
-  font-size: 14px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--border-radius-2xl);
+  border: 1px solid var(--color-primary);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: var(--transition-base);
+  min-height: var(--touch-target-min);
+}
+
+@media (max-width: 768px) {
+  .btn-empty {
+    gap: var(--spacing-mobile-xs);
+    padding: var(--spacing-mobile-sm) var(--spacing-mobile-md);
+    font-size: var(--font-size-mobile-base);
+  }
 }
 
 .btn-empty:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 32px -24px rgba(27, 43, 120, 0.55);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-empty :deep(svg) {
-  font-size: 20px;
+  font-size: var(--icon-size-lg);
+}
+
+@media (max-width: 768px) {
+  .btn-empty :deep(svg) {
+    font-size: var(--icon-size-mobile-lg);
+  }
 }
 
 .workspace-content {
@@ -153,7 +209,7 @@ const currentDoc = computed(() => docStore.currentDoc);
   height: 100%;
   border-radius: 0;
   border: none;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--color-bg-primary);
   overflow: hidden;
 }
 
@@ -165,14 +221,28 @@ const currentDoc = computed(() => docStore.currentDoc);
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  color: rgba(26, 34, 92, 0.6);
-  font-size: 14px;
+  gap: var(--spacing-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+@media (max-width: 768px) {
+  .viewer-placeholder {
+    gap: var(--spacing-mobile-sm);
+    font-size: var(--font-size-mobile-base);
+  }
 }
 
 .viewer-placeholder :deep(svg) {
-  font-size: 46px;
-  color: rgba(80, 112, 214, 0.5);
+  font-size: var(--icon-size-4xl);
+  color: var(--color-text-tertiary);
+}
+
+@media (max-width: 768px) {
+  .viewer-placeholder :deep(svg) {
+    font-size: var(--icon-size-3xl);
+  }
 }
 </style>
+
 

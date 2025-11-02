@@ -219,6 +219,12 @@ function handleDragEnd() {
   opacity: 0.5;
 }
 
+@media (max-width: 768px) {
+  .file-card {
+    padding: 10px;
+  }
+}
+
 .select-checkbox {
   position: absolute;
   top: 12px;
@@ -244,9 +250,22 @@ function handleDragEnd() {
   background: rgba(96, 118, 255, 0.05);
 }
 
+@media (max-width: 768px) {
+  .file-preview {
+    height: 100px;
+    margin-bottom: 6px;
+  }
+}
+
 .file-icon {
   font-size: 64px;
   opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .file-icon {
+    font-size: 48px;
+  }
 }
 
 .file-extension {
@@ -261,6 +280,15 @@ function handleDragEnd() {
   font-weight: 600;
   text-transform: uppercase;
   border: 1px solid rgba(200, 210, 255, 0.4);
+}
+
+@media (max-width: 768px) {
+  .file-extension {
+    padding: 3px 6px;
+    font-size: 10px;
+    bottom: 6px;
+    right: 6px;
+  }
 }
 
 .file-info {
@@ -279,12 +307,25 @@ function handleDragEnd() {
   white-space: nowrap;
 }
 
+@media (max-width: 768px) {
+  .file-name {
+    font-size: 13px;
+  }
+}
+
 .file-meta {
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 12px;
   color: rgba(47, 59, 128, 0.6);
+}
+
+@media (max-width: 768px) {
+  .file-meta {
+    font-size: 11px;
+    gap: 8px;
+  }
 }
 
 .file-size {
@@ -303,6 +344,13 @@ function handleDragEnd() {
   opacity: 1;
 }
 
+@media (max-width: 768px) {
+  .file-actions {
+    opacity: 1;
+    gap: 4px;
+  }
+}
+
 .action-btn {
   display: inline-flex;
   align-items: center;
@@ -314,6 +362,12 @@ function handleDragEnd() {
   color: #1f256a;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .action-btn {
+    padding: 6px;
+  }
 }
 
 .action-btn:hover {
@@ -332,6 +386,12 @@ function handleDragEnd() {
 
 .action-btn :deep(svg) {
   font-size: 18px;
+}
+
+@media (max-width: 768px) {
+  .action-btn :deep(svg) {
+    font-size: 16px;
+  }
 }
 </style>
 

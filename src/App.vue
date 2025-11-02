@@ -7,18 +7,14 @@
 
 <script setup>
 import { onMounted } from 'vue';
-import { useAuthStore } from './blog/stores/auth';
 import { useUiStore } from './blog/stores/ui';
 import ToastContainer from './blog/components/ToastContainer.vue';
 
-const authStore = useAuthStore();
 const uiStore = useUiStore();
 
 onMounted(() => {
-  // 初始化认证状态
-  authStore.init();
-  
   // 初始化主题
+  // 注意：认证状态的初始化由路由守卫统一处理，无需在此重复调用
   uiStore.initTheme();
 });
 </script>

@@ -1,0 +1,79 @@
+/**
+ * 交互元素尺寸
+ * 按钮、输入框、图标等可交互元素的标准尺寸
+ */
+
+:root {
+  /* 按钮高度 */
+  --btn-height-xs: 28px;
+  --btn-height-sm: 32px;
+  --btn-height-md: 36px;
+  --btn-height-lg: 42px;
+  --btn-height-xl: 48px;
+  
+  /* 移动端按钮高度 - 更大的触控区域 */
+  --btn-height-mobile-xs: 32px;
+  --btn-height-mobile-sm: 36px;
+  --btn-height-mobile-md: 40px;
+  --btn-height-mobile-lg: 44px;
+  --btn-height-mobile-xl: 48px;
+  
+  /* 按钮内边距 */
+  --btn-padding-sm: 6px 12px;
+  --btn-padding-md: 8px 16px;
+  --btn-padding-lg: 12px 24px;
+  
+  --btn-padding-mobile-sm: 8px 14px;
+  --btn-padding-mobile-md: 10px 16px;
+  --btn-padding-mobile-lg: 12px 20px;
+  
+  /* 图标尺寸 */
+  --icon-size-xs: 14px;
+  --icon-size-sm: 16px;
+  --icon-size-md: 18px;
+  --icon-size-lg: 20px;
+  --icon-size-xl: 24px;
+  --icon-size-2xl: 32px;
+  --icon-size-3xl: 40px;
+  --icon-size-4xl: 46px;
+  
+  /* 移动端图标尺寸 */
+  --icon-size-mobile-xs: 16px;
+  --icon-size-mobile-sm: 18px;
+  --icon-size-mobile-md: 20px;
+  --icon-size-mobile-lg: 22px;
+  --icon-size-mobile-xl: 24px;
+  --icon-size-mobile-2xl: 28px;
+  
+  /* 最小触控区域（移动端设计准则） */
+  --touch-target-min: 44px;
+  
+  /* 圆角 */
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 10px;
+  --border-radius-xl: 12px;
+  --border-radius-2xl: 16px;
+  --border-radius-full: 9999px;
+  
+  /* 输入框高度 */
+  --input-height-sm: 32px;
+  --input-height-md: 36px;
+  --input-height-lg: 42px;
+  
+  --input-height-mobile-sm: 36px;
+  --input-height-mobile-md: 40px;
+  --input-height-mobile-lg: 44px;
+  
+  /* 过渡动画 */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --transition-slower: 0.4s ease;
+  
+  /* 缓动函数 */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+}
+

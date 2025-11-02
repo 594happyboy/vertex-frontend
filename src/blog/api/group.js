@@ -10,16 +10,6 @@ export function getDirectoryTree() {
   return request.get('/api/directory-tree');
 }
 
-/**
- * 获取分组树（已废弃，使用 getDirectoryTree 代替）
- * @param {boolean} rootOnly - 是否只获取根分组
- * @returns {Promise<Array>}
- */
-export function getGroupTree(rootOnly = false) {
-  return request.get('/api/groups', {
-    params: { rootOnly },
-  });
-}
 
 /**
  * 创建分组

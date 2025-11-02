@@ -78,12 +78,9 @@ export const useTreeStore = defineStore('tree', {
       this.error = null;
       try {
         const response = await getDirectoryTree();
-        // 后端返回格式：{ data: { tree: [...], cached: false } }
         const data = response.data || response;
         this.tree = data.tree || [];
         this.cached = data.cached || false;
-        
-        // 检查当前打开的文档是否还存在
         this.checkAndCloseDoc();
       } catch (error) {
         this.error = error.message;
@@ -98,7 +95,7 @@ export const useTreeStore = defineStore('tree', {
     async createGroup(name, parentId = null) {
       try {
         const data = await apiCreateGroup({ name, parentId });
-        await this.fetchTree(); // 重新加载树
+        await this.fetchTree();
         return data;
       } catch (error) {
         console.error('Failed to create group:', error);
@@ -110,7 +107,7 @@ export const useTreeStore = defineStore('tree', {
     async updateGroup(id, updates) {
       try {
         const data = await apiUpdateGroup(id, updates);
-        await this.fetchTree(); // 重新加载树
+        await this.fetchTree();
         return data;
       } catch (error) {
         console.error('Failed to update group:', error);
@@ -122,7 +119,7 @@ export const useTreeStore = defineStore('tree', {
     async deleteGroup(id) {
       try {
         await apiDeleteGroup(id);
-        await this.fetchTree(); // 重新加载树（会自动检查并关闭不存在的文档）
+        await this.fetchTree();
       } catch (error) {
         console.error('Failed to delete group:', error);
         throw error;
@@ -133,7 +130,7 @@ export const useTreeStore = defineStore('tree', {
     async sortGroups(items) {
       try {
         await apiSortGroups(items);
-        await this.fetchTree(); // 重新加载树
+        await this.fetchTree();
       } catch (error) {
         console.error('Failed to sort groups:', error);
         throw error;
@@ -144,7 +141,7 @@ export const useTreeStore = defineStore('tree', {
     async sortDocuments(items) {
       try {
         await apiSortDocuments(items);
-        await this.fetchTree(); // 重新加载树
+        await this.fetchTree();
       } catch (error) {
         console.error('Failed to sort documents:', error);
         throw error;

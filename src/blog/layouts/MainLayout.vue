@@ -37,25 +37,27 @@
         <button class="btn-ghost" @click="toggleTheme" title="切换主题">
           <Icon :icon="isDark ? 'mdi:white-balance-sunny' : 'mdi:moon-waning-crescent'" />
         </button>
-        <div class="user-menu">
+         <div class="user-menu">
           <button class="btn-user" @click="toggleUserMenu">
             <span class="user-avatar">{{ avatarInitial }}</span>
             <span class="user-name">{{ currentUsername }}</span>
             <Icon icon="mdi:chevron-down" />
           </button>
           <transition name="fade-scale">
-            <div v-if="showUserMenu" class="user-dropdown">
-              <div class="user-card">
-                <div class="user-card__avatar">{{ avatarInitial }}</div>
-                <div>
-                  <div class="user-card__name">{{ currentUsername }}</div>
-                  <div class="user-card__role">Vertex 控制台</div>
+            <div v-if="showUserMenu" class="user-menu-wrapper" @click.self="showUserMenu = false">
+              <div class="user-dropdown" @click.stop>
+                <div class="user-card">
+                  <div class="user-card__avatar">{{ avatarInitial }}</div>
+                  <div>
+                    <div class="user-card__name">{{ currentUsername }}</div>
+                    <div class="user-card__role">Vertex 控制台</div>
+                  </div>
                 </div>
+                <button class="dropdown-item" @click="handleLogout">
+                  <Icon icon="mdi:logout" />
+                  <span>退出登录</span>
+                </button>
               </div>
-              <button class="dropdown-item" @click="handleLogout">
-                <Icon icon="mdi:logout" />
-                <span>退出登录</span>
-              </button>
             </div>
           </transition>
         </div>
@@ -66,6 +68,21 @@
     <main class="main-body">
       <RouterView />
     </main>
+
+    <!-- 移动端底部导航栏 -->
+    <nav class="bottom-nav">
+      <button
+        v-for="item in navItems"
+        :key="item.path"
+        class="bottom-nav-item"
+        :class="{ 'is-active': isNavItemActive(item) }"
+        @click="navigateTo(item.path)"
+      >
+        <Icon :icon="item.icon" />
+        <span>{{ item.label }}</span>
+        <span v-if="item.badge" class="bottom-nav-badge">{{ item.badge }}</span>
+      </button>
+    </nav>
   </div>
 </template>
 
@@ -73,9 +90,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Icon } from '@iconify/vue';
+import { useResponsive } from '@/composables';
 import { useAuthStore } from '../stores/auth';
 import { useUiStore } from '../stores/ui';
 
+const { isMobile } = useResponsive();
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
@@ -154,16 +173,19 @@ function toggleUserMenu() {
   showUserMenu.value = !showUserMenu.value;
 }
 
-function handleLogout() {
-  authStore.logout();
+async function handleLogout() {
+  await authStore.logout();
   uiStore.showInfo('已退出登录');
   router.push('/login');
 }
 
 function handleClickOutside(event) {
-  const userMenu = event.target.closest('.user-menu');
-  if (!userMenu && showUserMenu.value) {
-    showUserMenu.value = false;
+  // PC端点击外部关闭
+  if (window.innerWidth > 768) {
+    const userMenu = event.target.closest('.user-menu');
+    if (!userMenu && showUserMenu.value) {
+      showUserMenu.value = false;
+    }
   }
 }
 
@@ -179,7 +201,6 @@ onUnmounted(() => {
 <style scoped>
 .main-layout {
   width: 100%;
-  min-width: 1000px;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -198,6 +219,15 @@ onUnmounted(() => {
   color: #f6f8ff;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 16px rgba(10, 26, 128, 0.3);
   flex-shrink: 0;
+}
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+  .main-header {
+    grid-template-columns: auto 1fr auto;
+    padding: 7px 10px;
+    gap: 10px;
+  }
 }
 
 .main-header::after {
@@ -262,6 +292,12 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
+@media (max-width: 768px) {
+  .brand__text {
+    display: none;
+  }
+}
+
 /* 主导航 */
 .main-nav {
   display: flex;
@@ -271,6 +307,12 @@ onUnmounted(() => {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 768px) {
+  .main-nav {
+    display: none;
+  }
 }
 
 .nav-item {
@@ -356,6 +398,18 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.24);
 }
 
+@media (max-width: 768px) {
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+  
+  .btn-icon :deep(svg) {
+    font-size: 18px;
+  }
+}
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;
@@ -377,6 +431,17 @@ onUnmounted(() => {
 
 .btn-ghost :deep(svg) {
   font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .btn-ghost {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .btn-ghost :deep(svg) {
+    font-size: 18px;
+  }
 }
 
 /* 用户菜单 */
@@ -402,6 +467,13 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.18);
 }
 
+@media (max-width: 768px) {
+  .btn-user {
+    padding: 6px;
+    gap: 0;
+  }
+}
+
 .user-avatar {
   display: inline-flex;
   align-items: center;
@@ -414,19 +486,37 @@ onUnmounted(() => {
   font-size: 11px;
 }
 
+@media (max-width: 768px) {
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+}
+
 .user-name {
   font-size: 12px;
   font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .user-name {
+    display: none;
+  }
 }
 
 .btn-user :deep(svg) {
   font-size: 14px;
 }
 
-.user-dropdown {
+.user-menu-wrapper {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
+  z-index: 100;
+}
+
+.user-dropdown {
   min-width: 180px;
   padding: 12px;
   border-radius: 16px;
@@ -434,7 +524,35 @@ onUnmounted(() => {
   box-shadow: 0 18px 36px -24px rgba(14, 22, 72, 0.58);
   border: 1px solid rgba(225, 233, 255, 0.8);
   backdrop-filter: blur(18px);
-  z-index: 100;
+}
+
+/* 移动端用户菜单居中显示 */
+@media (max-width: 768px) {
+  .user-menu {
+    position: static;
+  }
+
+  .user-menu-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .user-dropdown {
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.35);
+    margin: 0;
+  }
 }
 
 .user-card {
@@ -510,6 +628,87 @@ onUnmounted(() => {
 .fade-scale-leave-to {
   opacity: 0;
   transform: scale(0.97);
+}
+
+/* 移动端底部导航栏 */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: linear-gradient(140deg, rgba(58, 84, 245, 0.96), rgba(21, 37, 117, 0.88));
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -4px 16px rgba(10, 26, 128, 0.3);
+    padding: 4px 8px calc(8px + env(safe-area-inset-bottom));
+    gap: 8px;
+  }
+
+  .main-body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+}
+
+.bottom-nav-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 9px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bottom-nav-item :deep(svg) {
+  font-size: 17px;
+  transition: transform 0.2s ease;
+}
+
+.bottom-nav-item:active {
+  transform: scale(0.95);
+}
+
+.bottom-nav-item.is-active {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-weight: 600;
+}
+
+.bottom-nav-item.is-active :deep(svg) {
+  transform: scale(1.1);
+}
+
+.bottom-nav-badge {
+  position: absolute;
+  top: 6px;
+  right: 20%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: rgba(255, 90, 95, 0.95);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
 }
 </style>
 

@@ -103,6 +103,7 @@ import { Icon } from '@iconify/vue';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useDocStore } from '../stores/doc';
 import { useUiStore } from '../stores/ui';
+import { getAccessToken } from '@/api/request';
 
 // ==================== 配置 ====================
 const PDF_CONFIG = {
@@ -396,11 +397,12 @@ async function loadPdf() {
     error.value = null;
     cancelRenderTask();
 
+    const accessToken = getAccessToken();
     const loadingTask = pdfjsLib.getDocument({
       url: pdfUrl.value,
-      httpHeaders: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-      },
+      httpHeaders: accessToken ? {
+        'Authorization': `Bearer ${accessToken}`,
+      } : {},
     });
     
     pdfDoc = await loadingTask.promise;
@@ -818,6 +820,14 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
+@media (max-width: 768px) {
+  .pdf-toolbar {
+    padding: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+}
+
 .toolbar-left,
 .toolbar-right {
   display: flex;
@@ -835,6 +845,23 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
+@media (max-width: 768px) {
+  .toolbar-left,
+  .toolbar-right {
+    gap: 8px;
+  }
+  
+  .toolbar-left {
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+  
+  .toolbar-right {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
 .toolbar-icon {
   display: inline-flex;
   align-items: center;
@@ -850,6 +877,17 @@ onBeforeUnmount(() => {
 
 .toolbar-icon :deep(svg) {
   font-size: 20px;
+}
+
+@media (max-width: 768px) {
+  .toolbar-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .toolbar-icon :deep(svg) {
+    font-size: 18px;
+  }
 }
 
 .toolbar-title {
@@ -870,12 +908,24 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
+@media (max-width: 768px) {
+  .doc-title {
+    font-size: 14px;
+  }
+}
+
 .doc-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
   color: rgba(31, 39, 102, 0.65);
+}
+
+@media (max-width: 768px) {
+  .doc-status {
+    font-size: 11px;
+  }
 }
 
 .control-group {
@@ -886,6 +936,13 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(196, 206, 255, 0.5);
+}
+
+@media (max-width: 768px) {
+  .control-group {
+    gap: 6px;
+    padding: 6px 10px;
+  }
 }
 
 .btn-icon {
@@ -914,6 +971,14 @@ onBeforeUnmount(() => {
   cursor: not-allowed;
 }
 
+@media (max-width: 768px) {
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+}
+
 .page-info,
 .zoom-info {
   display: flex;
@@ -923,6 +988,14 @@ onBeforeUnmount(() => {
   font-weight: 500;
   color: #1f2a72;
   user-select: none;
+}
+
+@media (max-width: 768px) {
+  .page-info,
+  .zoom-info {
+    font-size: 14px;
+    gap: 4px;
+  }
 }
 
 .page-input {
@@ -936,6 +1009,14 @@ onBeforeUnmount(() => {
   font-size: 13px;
   font-weight: 500;
   transition: border-color 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .page-input {
+    width: 50px;
+    padding: 6px 8px;
+    font-size: 14px;
+  }
 }
 
 .page-input:focus {
@@ -989,6 +1070,21 @@ onBeforeUnmount(() => {
   border-color: rgba(116, 137, 255, 0.6);
 }
 
+@media (max-width: 768px) {
+  .btn-download {
+    padding: 10px 12px;
+    gap: 0;
+  }
+  
+  .btn-download span {
+    display: none;
+  }
+  
+  .btn-download :deep(svg) {
+    font-size: 20px;
+  }
+}
+
 .pdf-content {
   flex: 1;
   display: flex;
@@ -999,6 +1095,13 @@ onBeforeUnmount(() => {
   padding: var(--spacing-lg);
   padding-top: calc(var(--spacing-lg) + 8px);
   position: relative;
+}
+
+@media (max-width: 768px) {
+  .pdf-content {
+    padding: var(--spacing-md);
+    padding-top: calc(var(--spacing-md) + 8px);
+  }
 }
 
 .pdf-loading,

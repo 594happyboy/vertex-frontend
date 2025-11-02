@@ -2,10 +2,14 @@ import axios from 'axios';
 import router from '@/blog/router';
 import { useAuthStore } from '@/blog/stores/auth';
 
+// ===== AccessToken 存储在内存中（刷新页面会丢失，但可通过 RefreshToken 自动恢复） =====
+let accessToken = null;
+
 // 创建 axios 实例
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
   timeout: 30000,
+  withCredentials: true, // ⚠️ 重要：允许发送和接收Cookie（RefreshToken存储在HttpOnly Cookie中）
   headers: {
     'Content-Type': 'application/json',
   },
@@ -17,9 +21,7 @@ let isTokenExpired = false;
 // 请求拦截器
 request.interceptors.request.use(
   (config) => {
-    // 自动注入 token
-    const accessToken = localStorage.getItem('accessToken');
-    
+    // 自动注入 AccessToken
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
@@ -35,16 +37,11 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   (response) => {
     // ===== 自动刷新Token逻辑 =====
-    // 检查响应头中是否有新Token（后端在Token剩余时间<30分钟时会返回）
-    const newToken = response.headers['x-new-token'];
-    if (newToken) {
-      const accessToken = localStorage.getItem('accessToken');
-      
-      if (accessToken) {
-        // 更新accessToken
-        localStorage.setItem('accessToken', newToken);
-        console.log('✅ AccessToken已自动刷新');
-      }
+    // 检查响应头中是否有新的 AccessToken（当 AccessToken 过期时，后端会自动用 RefreshToken 刷新）
+    const newAccessToken = response.headers['x-new-access-token'];
+    if (newAccessToken) {
+      console.log('✅ AccessToken已自动刷新');
+      accessToken = newAccessToken;
     }
     
     const { data } = response;
@@ -58,9 +55,10 @@ request.interceptors.response.use(
         
         console.warn('⚠️ Token已过期或无效，即将跳转到登录页');
         
-        // 获取auth store并清除所有认证信息
+        // 清除本地认证信息（不等待后端登出接口，直接清除）
         const authStore = useAuthStore();
-        authStore.logout();
+        authStore.user = null;
+        clearAccessToken();
         
         // 跳转到登录页，并记录原始路径用于登录后重定向
         const currentPath = router.currentRoute.value.fullPath;
@@ -125,6 +123,28 @@ request.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// ===== 导出 Token 管理方法 =====
+/**
+ * 设置 AccessToken（登录成功后调用）
+ */
+export const setAccessToken = (token) => {
+  accessToken = token;
+};
+
+/**
+ * 清除 AccessToken（登出时调用）
+ */
+export const clearAccessToken = () => {
+  accessToken = null;
+};
+
+/**
+ * 获取当前的 AccessToken
+ */
+export const getAccessToken = () => {
+  return accessToken;
+};
 
 export default request;
 

@@ -128,14 +128,17 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Icon } from '@iconify/vue';
+import { useResponsive } from '@/composables';
 import { useTreeStore } from '../stores/tree';
 import { useDocStore } from '../stores/doc';
 import { useUiStore } from '../stores/ui';
 import { batchUploadDocuments } from '../api/document';
 import TreeNode from './TreeNode.vue';
 
+const { isMobile } = useResponsive();
+
 // 常量定义
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const MAX_FAILED_ITEMS_DISPLAY = 5;
 
 // Stores
@@ -171,36 +174,20 @@ const expandedKeys = computed(() => treeStore.expandedKeys);
 const emit = defineEmits(['refresh']);
 
 // ===== 搜索功能 =====
-/**
- * 递归过滤树形数据
- * @param {Array} nodes - 树节点数组
- * @param {String} keyword - 搜索关键词（已转小写）
- * @returns {Array} 过滤后的树节点数组
- */
 function filterTree(nodes, keyword) {
   if (!nodes?.length) return [];
   
   return nodes.reduce((filtered, node) => {
     const nameMatch = node.name.toLowerCase().includes(keyword);
     const isGroup = node.nodeType?.toUpperCase() === 'GROUP';
+    const filteredChildren = isGroup && node.children?.length ? filterTree(node.children, keyword) : [];
     
-    // 递归过滤子节点
-    const filteredChildren = isGroup && node.children?.length 
-      ? filterTree(node.children, keyword)
-      : [];
-    
-    // 保留匹配的节点或包含匹配子节点的分组
     if (nameMatch || filteredChildren.length > 0) {
       const filteredNode = { ...node };
-      
       if (filteredChildren.length > 0) {
         filteredNode.children = filteredChildren;
-        // 自动展开包含搜索结果的分组
-        if (!expandedKeys.value.includes(node.id)) {
-          treeStore.expandNode(node.id);
-        }
+        if (!expandedKeys.value.includes(node.id)) treeStore.expandNode(node.id);
       }
-      
       filtered.push(filteredNode);
     }
     
@@ -209,6 +196,17 @@ function filterTree(nodes, keyword) {
 }
 
 const clearSearch = () => searchKeyword.value = '';
+
+// ===== 工具函数 =====
+function createTextFile(title, type) {
+  const config = {
+    md: { content: `# ${title}\n\n开始编写你的文档...`, mime: 'text/markdown', ext: '.md' },
+    txt: { content: '', mime: 'text/plain', ext: '.txt' }
+  }[type];
+  
+  const blob = new Blob([config.content], { type: config.mime });
+  return new File([blob], `${title}${config.ext}`, { type: config.mime });
+}
 
 // ===== 节点操作 =====
 function handleSelect(node, type) {
@@ -242,16 +240,10 @@ async function handleCreateDoc(groupId) {
 
   try {
     const trimmedTitle = title.trim();
-    const initialContent = `# ${trimmedTitle}\n\n开始编写你的文档...`;
-    const file = new File(
-      [new Blob([initialContent], { type: 'text/markdown' })], 
-      `${trimmedTitle}.md`, 
-      { type: 'text/markdown' }
-    );
-
+    const file = createTextFile(trimmedTitle, 'md');
     const doc = await docStore.createDoc(trimmedTitle, file, groupId);
-    await treeStore.fetchTree();
     
+    await treeStore.fetchTree();
     treeStore.selectNode(doc.id, 'document');
     if (groupId) treeStore.expandNode(groupId);
     
@@ -303,24 +295,9 @@ async function handleCreateNewDoc(type) {
 
   try {
     const trimmedTitle = title.trim();
-    let file;
-    
-    if (type === 'md') {
-      const initialContent = `# ${trimmedTitle}\n\n开始编写你的文档...`;
-      file = new File(
-        [new Blob([initialContent], { type: 'text/markdown' })],
-        `${trimmedTitle}.md`,
-        { type: 'text/markdown' }
-      );
-    } else if (type === 'txt') {
-      file = new File(
-        [new Blob([''], { type: 'text/plain' })],
-        `${trimmedTitle}.txt`,
-        { type: 'text/plain' }
-      );
-    }
-
+    const file = createTextFile(trimmedTitle, type);
     const doc = await docStore.createDoc(trimmedTitle, file);
+    
     await treeStore.fetchTree();
     treeStore.selectNode(doc.id, 'document');
     
@@ -349,13 +326,14 @@ async function handleImportFileSelect(event) {
   if (!file) return;
 
   const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-  if (!['.md', '.pdf', '.txt'].includes(fileExt)) {
+  const typeMap = { '.md': 'Markdown', '.pdf': 'PDF', '.txt': 'TXT' };
+  
+  if (!typeMap[fileExt]) {
     uiStore.showError('不支持的文件格式，仅支持 .md、.pdf 和 .txt');
     return;
   }
 
-  const typeName = fileExt === '.md' ? 'Markdown' : (fileExt === '.pdf' ? 'PDF' : 'TXT');
-  await uploadDocument(file, typeName);
+  await uploadDocument(file, typeMap[fileExt]);
 }
 
 async function uploadDocument(file, typeName) {
@@ -422,7 +400,7 @@ function formatBatchResult(result) {
 
 async function handleBatchFileSelect(event) {
   const file = event.target.files?.[0];
-  event.target.value = ''; // 重置input
+  event.target.value = '';
   
   if (!file || uploading.value) return;
 
@@ -437,15 +415,12 @@ async function handleBatchFileSelect(event) {
     uiStore.showInfo('正在上传压缩包，请稍候...');
 
     const result = await batchUploadDocuments(file, currentGroupId.value);
-    
     emit('refresh');
-    if (currentGroupId.value) {
-      treeStore.expandNode(currentGroupId.value);
-    }
+    
+    if (currentGroupId.value) treeStore.expandNode(currentGroupId.value);
 
     const { type, message } = formatBatchResult(result);
     uiStore[type === 'success' ? 'showSuccess' : 'showError'](message);
-
   } catch (error) {
     console.error('Batch upload error:', error);
     uiStore.showError(error.message || '批量导入失败');
@@ -460,10 +435,16 @@ async function handleBatchFileSelect(event) {
 .doc-tree {
   position: relative;
   height: 100%;
-  padding: 12px;
+  padding: var(--spacing-sm);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .doc-tree {
+    padding: var(--spacing-mobile-sm);
+  }
 }
 
 .tree-surface {
@@ -484,25 +465,37 @@ async function handleBatchFileSelect(event) {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-xs);
   flex: 1;
   min-width: 0;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(210, 220, 255, 0.6);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-lg);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  transition: var(--transition-base);
+}
+
+@media (max-width: 768px) {
+  .search-box {
+    padding: var(--spacing-mobile-sm) var(--spacing-mobile-sm);
+  }
 }
 
 .search-box:focus-within {
-  border-color: rgba(120, 140, 255, 0.8);
-  box-shadow: 0 0 0 3px rgba(120, 140, 255, 0.1);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
 }
 
 .search-icon {
-  font-size: 18px;
-  color: rgba(41, 51, 116, 0.5);
+  font-size: var(--icon-size-md);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .search-icon {
+    font-size: var(--icon-size-mobile-md);
+  }
 }
 
 .search-box input {
@@ -510,36 +503,55 @@ async function handleBatchFileSelect(event) {
   border: none;
   outline: none;
   background: transparent;
-  color: #1f2664;
-  font-size: 13px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
   min-width: 0;
 }
 
 .search-box input::placeholder {
-  color: rgba(31, 38, 98, 0.45);
+  color: var(--color-text-tertiary);
+}
+
+@media (max-width: 768px) {
+  .search-box input {
+    font-size: var(--font-size-mobile-base);
+  }
 }
 
 .search-clear {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  width: var(--icon-size-lg);
+  height: var(--icon-size-lg);
+  border-radius: var(--border-radius-full);
   border: none;
   background: transparent;
-  color: rgba(41, 51, 116, 0.5);
+  color: var(--color-text-secondary);
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: var(--transition-fast);
   flex-shrink: 0;
 }
 
+@media (max-width: 768px) {
+  .search-clear {
+    width: var(--icon-size-mobile-lg);
+    height: var(--icon-size-mobile-lg);
+  }
+}
+
 .search-clear:hover {
-  color: #293374;
+  color: var(--color-text-primary);
 }
 
 .search-clear :deep(svg) {
-  font-size: 16px;
+  font-size: var(--icon-size-sm);
+}
+
+@media (max-width: 768px) {
+  .search-clear :deep(svg) {
+    font-size: var(--icon-size-mobile-sm);
+  }
 }
 
 /* 目录树容器 */
@@ -556,9 +568,9 @@ async function handleBatchFileSelect(event) {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(226, 233, 255, 0.5);
+  border-radius: var(--border-radius-xl);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   overflow: hidden;
 }
 
@@ -566,75 +578,102 @@ async function handleBatchFileSelect(event) {
 .tree-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border-bottom: 1px solid rgba(226, 233, 255, 0.5);
-  background: rgba(248, 250, 255, 0.6);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
   flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .tree-actions {
+    padding: var(--spacing-mobile-sm);
+    gap: var(--spacing-mobile-xs);
+  }
 }
 
 .action-buttons {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    gap: var(--spacing-mobile-2xs);
+  }
 }
 
 .btn-tree-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid rgba(196, 206, 255, 0.6);
-  background: rgba(255, 255, 255, 0.9);
-  color: #293374;
+  width: var(--btn-height-sm);
+  height: var(--btn-height-sm);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: var(--transition-base);
 }
 
 .btn-tree-action :deep(svg) {
-  font-size: 18px;
+  font-size: var(--icon-size-md);
+}
+
+@media (max-width: 768px) {
+  .btn-tree-action {
+    width: var(--btn-height-mobile-sm);
+    height: var(--btn-height-mobile-sm);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .btn-tree-action :deep(svg) {
+    font-size: var(--icon-size-mobile-md);
+  }
 }
 
 .btn-tree-action:hover {
   transform: translateY(-1px);
-  border-color: rgba(120, 140, 255, 0.75);
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 8px 20px -14px rgba(26, 42, 116, 0.4);
+  border-color: var(--color-border-hover);
+  background: var(--color-bg-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-tree-action.btn-create-group {
-  background: linear-gradient(135deg, rgba(108, 126, 255, 0.08), rgba(68, 148, 255, 0.06));
-  border-color: rgba(108, 126, 255, 0.35);
-  color: #4966ff;
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .btn-tree-action.btn-create-group:hover {
-  background: linear-gradient(135deg, rgba(108, 126, 255, 0.15), rgba(68, 148, 255, 0.12));
-  border-color: rgba(108, 126, 255, 0.5);
+  background: var(--color-primary-lighter);
+  border-color: var(--color-primary);
 }
 
 .btn-tree-action.btn-create-doc {
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(16, 185, 129, 0.06));
-  border-color: rgba(16, 185, 129, 0.35);
-  color: #059669;
+  background: var(--color-success-light);
+  border-color: var(--color-success);
+  color: var(--color-success);
 }
 
 .btn-tree-action.btn-create-doc:hover {
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(16, 185, 129, 0.12));
-  border-color: rgba(16, 185, 129, 0.5);
+  background: var(--color-success-lighter);
+  border-color: var(--color-success);
 }
 
 .btn-tree-action.btn-import {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.08), rgba(249, 115, 22, 0.06));
-  border-color: rgba(249, 115, 22, 0.35);
-  color: #ea580c;
+  background: var(--color-warning-light);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
 }
 
 .btn-tree-action.btn-import:hover {
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(249, 115, 22, 0.12));
-  border-color: rgba(249, 115, 22, 0.5);
+  background: var(--color-warning-lighter);
+  border-color: var(--color-warning);
 }
 
 /* 目录树列表容器（包含状态和列表） */
@@ -657,40 +696,53 @@ async function handleBatchFileSelect(event) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 48px 24px;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-3xl) var(--spacing-lg);
   text-align: center;
-  color: rgba(33, 42, 110, 0.6);
-  background: rgba(255, 255, 255, 0.95);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-primary);
   z-index: 10;
 }
 
+@media (max-width: 768px) {
+  .tree-status {
+    gap: var(--spacing-mobile-md);
+    padding: var(--spacing-mobile-2xl) var(--spacing-mobile-md);
+  }
+}
+
 .tree-status--error {
-  color: #d64545;
+  color: var(--color-danger);
 }
 
 .tree-status--empty {
-  color: rgba(33, 42, 110, 0.65);
+  color: var(--color-text-secondary);
 }
 
 .tree-status--empty :deep(svg) {
-  font-size: 46px;
-  color: rgba(96, 108, 182, 0.5);
+  font-size: var(--icon-size-4xl);
+  color: var(--color-text-tertiary);
 }
 
 .tree-status--no-results {
-  color: rgba(33, 42, 110, 0.6);
+  color: var(--color-text-secondary);
 }
 
 .tree-status--no-results :deep(svg) {
-  font-size: 46px;
-  color: rgba(120, 140, 255, 0.5);
+  font-size: var(--icon-size-4xl);
+  color: var(--color-primary);
 }
 
 .tree-status__hint {
-  font-size: 12px;
-  color: rgba(33, 42, 110, 0.5);
-  margin-top: -8px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: calc(var(--spacing-xs) * -1);
+}
+
+@media (max-width: 768px) {
+  .tree-status__hint {
+    font-size: var(--font-size-mobile-xs);
+  }
 }
 
 .status-loader {
@@ -704,61 +756,80 @@ async function handleBatchFileSelect(event) {
   position: absolute;
   width: 54px;
   height: 54px;
-  border-radius: 999px;
-  border: 2px solid rgba(93, 121, 255, 0.3);
+  border-radius: var(--border-radius-full);
+  border: 2px solid var(--color-primary-light);
   animation: pulse 1.8s ease-in-out infinite;
 }
 
 .status-loader .spin {
-  font-size: 26px;
-  color: rgba(73, 102, 214, 0.75);
+  font-size: var(--icon-size-2xl);
+  color: var(--color-primary);
   animation: spin 1s linear infinite;
 }
 
 .btn-primary {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
-  border-radius: 14px;
+  padding: var(--btn-padding-sm);
+  border-radius: var(--border-radius-xl);
   border: none;
-  background: linear-gradient(135deg, rgba(108, 126, 255, 0.96), rgba(68, 148, 255, 0.92));
-  color: #fff;
-  font-size: 13px;
+  background: var(--gradient-primary);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: var(--transition-base);
+}
+
+@media (max-width: 768px) {
+  .btn-primary {
+    padding: var(--btn-padding-mobile-sm);
+    font-size: var(--font-size-mobile-sm);
+  }
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 30px -20px rgba(61, 109, 255, 0.6);
+  box-shadow: var(--shadow-primary);
 }
 
 .btn-primary:deep(svg) {
-  color: #fff;
-  font-size: 25px;
+  color: var(--color-text-inverse);
+  font-size: var(--icon-size-xl);
 }
 
 .tree-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: var(--spacing-xs);
   min-height: 0;
   width: 100%;
 }
 
+@media (max-width: 768px) {
+  .tree-list {
+    padding: var(--spacing-mobile-xs);
+  }
+}
+
 .tree-list[data-scroll]::-webkit-scrollbar {
-  width: 8px;
+  width: var(--spacing-xs);
 }
 
 .tree-list[data-scroll]::-webkit-scrollbar-thumb {
-  background: rgba(177, 190, 255, 0.6);
-  border-radius: 999px;
+  background: var(--color-scrollbar-thumb);
+  border-radius: var(--border-radius-full);
 }
 
 .tree-status__text {
-  font-size: 13px;
-  color: rgba(33, 42, 110, 0.65);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .tree-status__text {
+    font-size: var(--font-size-mobile-sm);
+  }
 }
 
 @keyframes spin {
@@ -792,100 +863,151 @@ async function handleBatchFileSelect(event) {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-modal);
   backdrop-filter: blur(4px);
 }
 
 .mini-dialog {
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 16px;
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-2xl);
+  box-shadow: var(--shadow-2xl);
   width: 90%;
   max-width: 320px;
   overflow: hidden;
-  border: 1px solid rgba(226, 233, 255, 0.6);
+  border: 1px solid var(--color-border);
 }
 
 .mini-dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(226, 233, 255, 0.5);
-  background: rgba(248, 250, 255, 0.6);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+}
+
+@media (max-width: 768px) {
+  .mini-dialog-header {
+    padding: var(--spacing-mobile-sm) var(--spacing-mobile-md);
+  }
 }
 
 .mini-dialog-header h4 {
-  font-size: 16px;
+  font-size: var(--font-size-md);
   font-weight: 600;
-  color: #1f2664;
+  color: var(--color-text-primary);
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .mini-dialog-header h4 {
+    font-size: var(--font-size-mobile-md);
+  }
 }
 
 .btn-dialog-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: var(--btn-height-xs);
+  height: var(--btn-height-xs);
+  border-radius: var(--border-radius-md);
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-fast);
+}
+
+@media (max-width: 768px) {
+  .btn-dialog-close {
+    width: var(--btn-height-mobile-xs);
+    height: var(--btn-height-mobile-xs);
+  }
 }
 
 .btn-dialog-close:hover {
-  background: rgba(226, 233, 255, 0.4);
-  color: #293374;
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
 }
 
 .btn-dialog-close :deep(svg) {
-  font-size: 18px;
+  font-size: var(--icon-size-md);
+}
+
+@media (max-width: 768px) {
+  .btn-dialog-close :deep(svg) {
+    font-size: var(--icon-size-mobile-md);
+  }
 }
 
 .mini-dialog-body {
-  padding: 12px;
+  padding: var(--spacing-sm);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-xs);
+}
+
+@media (max-width: 768px) {
+  .mini-dialog-body {
+    padding: var(--spacing-mobile-sm);
+    gap: var(--spacing-mobile-xs);
+  }
 }
 
 .mini-option {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: 1px solid rgba(226, 233, 255, 0.6);
-  background: rgba(255, 255, 255, 0.9);
-  color: #1f2664;
-  font-size: 14px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-fast);
+  min-height: var(--touch-target-min);
+}
+
+@media (max-width: 768px) {
+  .mini-option {
+    gap: var(--spacing-mobile-sm);
+    padding: var(--spacing-mobile-sm) var(--spacing-mobile-md);
+    font-size: var(--font-size-mobile-base);
+  }
 }
 
 .mini-option:hover {
-  background: rgba(234, 239, 255, 0.9);
-  border-color: rgba(108, 126, 255, 0.5);
+  background: var(--color-bg-hover);
+  border-color: var(--color-primary);
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px -12px rgba(26, 42, 116, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .mini-option :deep(svg) {
-  font-size: 20px;
-  color: #6366f1;
+  font-size: var(--icon-size-lg);
+  color: var(--color-primary);
   flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .mini-option :deep(svg) {
+    font-size: var(--icon-size-mobile-lg);
+  }
 }
 
 .mini-option span {
   flex: 1;
 }
 </style>
+
+
+
+

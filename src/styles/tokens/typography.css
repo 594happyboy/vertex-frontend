@@ -1,0 +1,44 @@
+/**
+ * 字体系统
+ * 定义字体大小、行高、字重等
+ */
+
+:root {
+  /* 字体大小（PC端） */
+  --font-size-2xs: 10px;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  
+  /* 字体大小（移动端）- 略微放大以提升可读性 */
+  --font-size-mobile-2xs: 10px;
+  --font-size-mobile-xs: 11px;
+  --font-size-mobile-sm: 13px;
+  --font-size-mobile-base: 14px;
+  --font-size-mobile-md: 15px;
+  --font-size-mobile-lg: 16px;
+  --font-size-mobile-xl: 18px;
+  --font-size-mobile-2xl: 20px;
+  
+  /* 行高 */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  --line-height-loose: 2;
+  
+  /* 字重 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* 字体族 */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+

@@ -1,0 +1,91 @@
+/**
+ * 颜色系统
+ * 使用语义化命名，便于主题切换
+ */
+
+:root {
+  /* 主色调 */
+  --color-primary: #6076ff;
+  --color-primary-rgb: 96, 118, 255;
+  --color-primary-light: rgba(96, 118, 255, 0.1);
+  --color-primary-lighter: rgba(96, 118, 255, 0.05);
+  --color-primary-dark: #4c63ff;
+  --color-primary-darker: #3a54f5;
+  
+  /* 辅助色 */
+  --color-secondary: #21b5ff;
+  --color-secondary-light: rgba(33, 181, 255, 0.1);
+  
+  /* 语义化颜色 */
+  --color-success: #4caf50;
+  --color-success-light: rgba(76, 175, 80, 0.1);
+  --color-success-lighter: rgba(76, 175, 80, 0.05);
+  
+  --color-warning: #ff9800;
+  --color-warning-light: rgba(255, 152, 0, 0.1);
+  --color-warning-lighter: rgba(255, 152, 0, 0.05);
+  
+  --color-danger: #e74c3c;
+  --color-danger-rgb: 231, 76, 60;
+  --color-danger-light: rgba(231, 76, 60, 0.1);
+  --color-danger-lighter: rgba(231, 76, 60, 0.05);
+  
+  --color-info: #00bcd4;
+  --color-info-light: rgba(0, 188, 212, 0.1);
+  
+  /* 背景色 */
+  --color-bg-primary: rgba(255, 255, 255, 0.9);
+  --color-bg-secondary: rgba(255, 255, 255, 0.6);
+  --color-bg-tertiary: rgba(248, 250, 255, 0.6);
+  --color-bg-elevated: rgba(255, 255, 255, 1);
+  --color-bg-overlay: rgba(0, 0, 0, 0.4);
+  --color-bg-hover: rgba(234, 239, 255, 0.9);
+  
+  /* 遮罩层 */
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  
+  /* 边框色 */
+  --color-border: rgba(200, 210, 255, 0.3);
+  --color-border-light: rgba(200, 210, 255, 0.2);
+  --color-border-hover: rgba(96, 118, 255, 0.5);
+  --color-border-active: rgba(96, 118, 255, 0.6);
+  --color-border-focus: rgba(120, 140, 255, 0.8);
+  
+  /* 文字色 */
+  --color-text-primary: #1f256a;
+  --color-text-secondary: rgba(47, 59, 128, 0.7);
+  --color-text-tertiary: rgba(47, 59, 128, 0.5);
+  --color-text-quaternary: rgba(47, 59, 128, 0.3);
+  --color-text-inverse: #ffffff;
+  
+  /* 渐变色 */
+  --gradient-primary: linear-gradient(135deg, rgba(96, 118, 255, 0.18), rgba(33, 181, 255, 0.14));
+  --gradient-header: linear-gradient(140deg, rgba(58, 84, 245, 0.96), rgba(21, 37, 117, 0.88));
+  --gradient-danger: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  
+  /* 阴影 */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.15);
+  --shadow-2xl: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-primary: 0 8px 20px -12px rgba(96, 118, 255, 0.3);
+  --shadow-primary-hover: 0 12px 28px -14px rgba(96, 118, 255, 0.4);
+  --shadow-focus: 0 0 0 3px rgba(120, 140, 255, 0.1);
+  
+  /* 滚动条 */
+  --color-scrollbar-thumb: rgba(177, 190, 255, 0.6);
+  --color-scrollbar-track: transparent;
+  
+  /* Z-index层级 */
+  --z-base: 1;
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+

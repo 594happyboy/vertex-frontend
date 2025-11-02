@@ -96,10 +96,34 @@ function handleNavigate(folderId) {
   font-size: 16px;
 }
 
+@media (max-width: 768px) {
+  .breadcrumb-item {
+    padding: 8px 14px;
+    gap: 8px;
+    font-size: 14px;
+  }
+  
+  .breadcrumb-item :deep(svg) {
+    font-size: 18px;
+  }
+  
+  .breadcrumb-item span {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .breadcrumb-separator {
   font-size: 18px;
   color: rgba(47, 59, 128, 0.3);
   flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .breadcrumb-separator {
+    font-size: 20px;
+  }
 }
 
 /* 滚动条样式 */

@@ -13,16 +13,20 @@ export const useUiStore = defineStore('ui', {
   },
 
   actions: {
+    // 初始化侧边栏状态
+    initSidebar() {
+      // 移动端默认收起侧边栏
+      if (window.innerWidth <= 768) {
+        this.sidebarCollapsed = true;
+      } else {
+        this.sidebarCollapsed = false;
+      }
+    },
+
     // 初始化主题
     initTheme() {
       const savedTheme = localStorage.getItem('theme');
-      if (savedTheme) {
-        this.theme = savedTheme;
-      } else {
-        // 检测系统主题偏好
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        this.theme = prefersDark ? 'dark' : 'light';
-      }
+      this.theme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       this.applyTheme();
     },
 
@@ -48,13 +52,10 @@ export const useUiStore = defineStore('ui', {
     // 显示通知
     showToast(message, type = 'info', duration = 3000) {
       const id = Date.now();
-      const toast = { id, message, type, duration };
-      this.toasts.push(toast);
+      this.toasts.push({ id, message, type, duration });
 
       if (duration > 0) {
-        setTimeout(() => {
-          this.removeToast(id);
-        }, duration);
+        setTimeout(() => this.removeToast(id), duration);
       }
 
       return id;
@@ -63,30 +64,14 @@ export const useUiStore = defineStore('ui', {
     // 移除通知
     removeToast(id) {
       const index = this.toasts.findIndex((t) => t.id === id);
-      if (index > -1) {
-        this.toasts.splice(index, 1);
-      }
+      if (index > -1) this.toasts.splice(index, 1);
     },
 
-    // 显示成功消息
-    showSuccess(message, duration) {
-      return this.showToast(message, 'success', duration);
-    },
-
-    // 显示错误消息
-    showError(message, duration) {
-      return this.showToast(message, 'error', duration);
-    },
-
-    // 显示警告消息
-    showWarning(message, duration) {
-      return this.showToast(message, 'warning', duration);
-    },
-
-    // 显示信息消息
-    showInfo(message, duration) {
-      return this.showToast(message, 'info', duration);
-    },
+    // 快捷通知方法
+    showSuccess(message, duration) { return this.showToast(message, 'success', duration); },
+    showError(message, duration) { return this.showToast(message, 'error', duration); },
+    showWarning(message, duration) { return this.showToast(message, 'warning', duration); },
+    showInfo(message, duration) { return this.showToast(message, 'info', duration); },
 
     // 打开对话框
     openDialog(name, data = {}) {

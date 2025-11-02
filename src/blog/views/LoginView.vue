@@ -67,20 +67,7 @@ const form = ref({
 const loading = ref(false);
 const error = ref('');
 
-const canSubmit = computed(() => {
-  return form.value.username.trim() && form.value.password.trim();
-});
-
-// 获取重定向路径（Token过期前的页面）
-function getRedirectPath() {
-  const redirect = route.query.redirect;
-  // 如果有redirect参数且不是登录页，则使用该路径
-  if (redirect && redirect !== '/login') {
-    return redirect;
-  }
-  // 否则默认跳转到管理页
-  return '/me';
-}
+const canSubmit = computed(() => form.value.username.trim() && form.value.password.trim());
 
 // 用户登录
 async function handleLogin() {
@@ -93,9 +80,9 @@ async function handleLogin() {
     await authStore.login(form.value.username, form.value.password);
     uiStore.showSuccess('登录成功');
     
-    // 登录成功后跳转到原来的页面或默认页面
-    const redirectPath = getRedirectPath();
-    router.push(redirectPath);
+    // 登录成功后跳转（优先使用redirect参数，否则默认/me）
+    const redirect = route.query.redirect;
+    router.push(redirect && redirect !== '/login' ? redirect : '/me');
   } catch (err) {
     error.value = err.message || '登录失败，请检查用户名和密码';
   } finally {
