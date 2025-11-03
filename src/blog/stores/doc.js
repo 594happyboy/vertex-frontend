@@ -7,6 +7,7 @@ import {
   deleteDocument as apiDeleteDocument,
 } from '../api/document';
 import { getAccessToken } from '@/api/request';
+import { FILE_TYPE_CONFIG, AUTO_SAVE_DEBOUNCE, SYNC_STATUS } from '../constants';
 
 export const useDocStore = defineStore('doc', {
   state: () => ({
@@ -17,7 +18,7 @@ export const useDocStore = defineStore('doc', {
     dirty: false, // 是否有未保存的修改
     error: null,
     // 自动保存相关状态
-    syncStatus: 'synced', // 'synced' | 'editing' | 'pending' | 'saving' | 'error'
+    syncStatus: SYNC_STATUS.SYNCED,
     lastSavedAt: null, // 最后保存时间
     saveError: null, // 保存错误信息
     autoSaveTimer: null, // 自动保存定时器
@@ -75,7 +76,7 @@ export const useDocStore = defineStore('doc', {
         this.mode = 'view';
         this.dirty = false;
         this.error = null;
-        this.syncStatus = 'synced';
+        this.syncStatus = SYNC_STATUS.SYNCED;
         this.saveError = null;
         this.lastSavedAt = null;
         return data;
@@ -107,7 +108,7 @@ export const useDocStore = defineStore('doc', {
           : '';
         this.mode = isTextDoc ? 'edit' : 'view';
         this.dirty = false;
-        this.syncStatus = 'synced';
+        this.syncStatus = SYNC_STATUS.SYNCED;
         this.saveError = null;
         this.lastSavedAt = null;
         return data;
@@ -125,10 +126,10 @@ export const useDocStore = defineStore('doc', {
       try {
         // 如果是文本文档且内容有变化，需要更新文件
         if (this.isTextDoc && this.dirty) {
-          const config = {
-            md: { ext: '.md', mime: 'text/markdown' },
-            txt: { ext: '.txt', mime: 'text/plain' }
-          }[this.currentDoc.type];
+          const config = FILE_TYPE_CONFIG[this.currentDoc.type];
+          if (!config) {
+            throw new Error(`不支持的文档类型: ${this.currentDoc.type}`);
+          }
 
           const blob = new Blob([this.content], { type: config.mime });
           const file = new File([blob], `${this.currentDoc.title}${config.ext}`, { type: config.mime });
@@ -157,7 +158,7 @@ export const useDocStore = defineStore('doc', {
       
       this.currentDoc.title = newTitle;
       this.dirty = true;
-      this.syncStatus = 'editing';
+      this.syncStatus = SYNC_STATUS.EDITING;
       this.scheduleAutoSave();
     },
 
@@ -167,31 +168,31 @@ export const useDocStore = defineStore('doc', {
       
       this.content = newContent;
       this.dirty = true;
-      this.syncStatus = 'editing';
+      this.syncStatus = SYNC_STATUS.EDITING;
       this.scheduleAutoSave();
     },
 
-    // 调度自动保存（防抖1秒）
+    // 调度自动保存（防抖）
     scheduleAutoSave() {
       if (this.autoSaveTimer) {
         clearTimeout(this.autoSaveTimer);
       }
       
-      this.syncStatus = 'pending';
+      this.syncStatus = SYNC_STATUS.PENDING;
       
       this.autoSaveTimer = setTimeout(async () => {
         await this.performAutoSave();
-      }, 1000);
+      }, AUTO_SAVE_DEBOUNCE);
     },
 
     // 执行自动保存
     async performAutoSave() {
       if (!this.currentDoc || !this.dirty) {
-        this.syncStatus = 'synced';
+        this.syncStatus = SYNC_STATUS.SYNCED;
         return;
       }
       
-      this.syncStatus = 'saving';
+      this.syncStatus = SYNC_STATUS.SAVING;
       this.saving = true;
       this.saveError = null;
       
@@ -210,10 +211,10 @@ export const useDocStore = defineStore('doc', {
         
         // 如果内容变了，需要更新文件
         if (contentChanged && this.isTextDoc) {
-          const config = {
-            md: { ext: '.md', mime: 'text/markdown' },
-            txt: { ext: '.txt', mime: 'text/plain' }
-          }[this.currentDoc.type];
+          const config = FILE_TYPE_CONFIG[this.currentDoc.type];
+          if (!config) {
+            throw new Error(`不支持的文档类型: ${this.currentDoc.type}`);
+          }
           
           const blob = new Blob([this.content], { type: config.mime });
           const file = new File([blob], `${this.currentDoc.title}${config.ext}`, { 
@@ -225,7 +226,7 @@ export const useDocStore = defineStore('doc', {
         
         // 保存成功
         this.dirty = false;
-        this.syncStatus = 'synced';
+        this.syncStatus = SYNC_STATUS.SYNCED;
         this.lastSavedAt = new Date();
         
         // 更新左侧树（如果标题变了）
@@ -238,7 +239,7 @@ export const useDocStore = defineStore('doc', {
         
       } catch (error) {
         console.error('Auto save failed:', error);
-        this.syncStatus = 'error';
+        this.syncStatus = SYNC_STATUS.ERROR;
         this.saveError = error.message || '保存失败';
         // 保持 dirty 状态，允许重试
       } finally {
@@ -289,7 +290,7 @@ export const useDocStore = defineStore('doc', {
       this.mode = 'view';
       this.dirty = false;
       this.error = null;
-      this.syncStatus = 'synced';
+      this.syncStatus = SYNC_STATUS.SYNCED;
       this.saveError = null;
       this.lastSavedAt = null;
     },

@@ -812,7 +812,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 20px;
+  padding: 8px 20px;
   background: linear-gradient(135deg, rgba(247, 249, 255, 0.98), rgba(233, 239, 255, 0.95));
   border-bottom: 1px solid rgba(220, 230, 255, 0.7);
   box-shadow: 0 2px 8px rgba(18, 28, 88, 0.1);
@@ -822,7 +822,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .pdf-toolbar {
-    padding: 12px;
+    padding: 8px 12px;
     gap: 8px;
     flex-wrap: wrap;
   }

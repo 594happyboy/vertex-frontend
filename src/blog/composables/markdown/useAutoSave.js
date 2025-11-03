@@ -1,13 +1,15 @@
 import { computed } from 'vue';
 import { useDocStore } from '../../stores/doc';
+import { SYNC_STATUS, STATUS_TEXT_MAP } from '../../constants';
+import { formatTimeAgo } from '../../utils/uiHelpers';
 
-// 状态映射配置
-const STATUS_MAP = {
-  saving: { text: '正在保存中...', type: 'saving' },
-  pending: { text: '等待保存...', type: 'pending' },
-  editing: { text: '正在编辑', type: 'editing' },
-  error: { text: '保存失败', type: 'error' },
-  synced: { text: '已同步到云端', type: 'synced' },
+// 状态类型映射
+const STATUS_TYPE_MAP = {
+  [SYNC_STATUS.SAVING]: 'saving',
+  [SYNC_STATUS.PENDING]: 'pending',
+  [SYNC_STATUS.EDITING]: 'editing',
+  [SYNC_STATUS.ERROR]: 'error',
+  [SYNC_STATUS.SYNCED]: 'synced',
 };
 
 /**
@@ -24,47 +26,42 @@ export function useAutoSaveStatus() {
    * 计算最后保存时间的友好显示
    */
   const lastSavedText = computed(() => {
-    if (!docStore.lastSavedAt) return '';
-    
-    const now = Date.now();
-    const diff = now - docStore.lastSavedAt.getTime();
-    
-    if (diff < 60000) return '刚刚保存';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
-    return docStore.lastSavedAt.toLocaleDateString();
+    return docStore.lastSavedAt ? formatTimeAgo(docStore.lastSavedAt) : '';
   });
 
   /**
-   * 当前状态配置
+   * 当前状态文本
    */
-  const currentStatus = computed(() => {
-    return STATUS_MAP[docStore.syncStatus] || STATUS_MAP.synced;
+  const currentStatusText = computed(() => {
+    return STATUS_TEXT_MAP[docStore.syncStatus] || STATUS_TEXT_MAP[SYNC_STATUS.SYNCED];
   });
 
   /**
    * 状态文本（带时间和错误信息）
    */
   const statusText = computed(() => {
-    const status = currentStatus.value;
+    const text = currentStatusText.value;
+    const type = docStore.syncStatus;
     
     // 同步状态时显示最后保存时间
-    if (status.type === 'synced' && lastSavedText.value) {
-      return `${status.text} · ${lastSavedText.value}`;
+    if (type === SYNC_STATUS.SYNCED && lastSavedText.value) {
+      return `${text} · ${lastSavedText.value}`;
     }
     
     // 错误状态时显示错误信息
-    if (status.type === 'error' && docStore.saveError) {
-      return `${status.text}：${docStore.saveError}`;
+    if (type === SYNC_STATUS.ERROR && docStore.saveError) {
+      return `${text}：${docStore.saveError}`;
     }
     
-    return status.text;
+    return text;
   });
 
   /**
    * 状态类型（用于样式）
    */
-  const statusType = computed(() => currentStatus.value.type);
+  const statusType = computed(() => {
+    return STATUS_TYPE_MAP[docStore.syncStatus] || 'synced';
+  });
 
   return {
     statusText,

@@ -56,7 +56,7 @@ const canSave = computed(() => docStore.dirty && !docStore.saving);
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--gradient-primary);
   border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
@@ -66,7 +66,7 @@ const canSave = computed(() => docStore.dirty && !docStore.saving);
 
 @media (max-width: 768px) {
   .md-toolbar {
-    padding: var(--spacing-mobile-sm) var(--spacing-mobile-sm);
+    padding: var(--spacing-mobile-xs) var(--spacing-mobile-sm);
     gap: var(--spacing-mobile-xs);
   }
 }

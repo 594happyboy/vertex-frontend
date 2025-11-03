@@ -102,6 +102,28 @@ export function uploadFile(file, options = {}) {
   });
 }
 
+/**
+ * 上传附件（自动存储到系统/附件文件夹）
+ * @param {File} file
+ * @param {Object} options - { userId, description? }
+ * @returns {Promise<Object>}
+ */
+export function uploadAttachment(file, options = {}) {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const params = {};
+  if (options.userId) params.userId = options.userId;
+  if (options.description) params.description = options.description;
+  
+  return request.post('/api/files/upload/attachment', formData, {
+    params,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+}
+
 // 已移除getFileList - 不再支持旧版API，请使用getFolderChildren
 
 /**

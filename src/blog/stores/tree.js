@@ -8,20 +8,7 @@ import {
 } from '../api/group';
 import { sortDocuments as apiSortDocuments } from '../api/document';
 import { useDocStore } from './doc';
-
-// 通用的树遍历工具函数
-function traverseTree(nodes, callback) {
-  for (const node of nodes) {
-    const result = callback(node);
-    if (result !== undefined) return result;
-    
-    if (node.children?.length > 0) {
-      const found = traverseTree(node.children, callback);
-      if (found !== undefined) return found;
-    }
-  }
-  return undefined;
-}
+import { traverseTree, flattenTree, findNodeById } from '../utils/treeHelpers';
 
 export const useTreeStore = defineStore('tree', {
   state: () => ({
@@ -36,20 +23,11 @@ export const useTreeStore = defineStore('tree', {
 
   getters: {
     // 扁平化的所有节点列表
-    flatNodes: (state) => {
-      const result = [];
-      traverseTree(state.tree, (node) => {
-        result.push(node);
-      });
-      return result;
-    },
+    flatNodes: (state) => flattenTree(state.tree),
 
     // 根据 ID 和类型查找节点
     findNodeById: (state) => (id, type = null) => {
-      return traverseTree(state.tree, (node) => {
-        const matchType = !type || node.nodeType?.toUpperCase() === type.toUpperCase();
-        return (node.id === id && matchType) ? node : undefined;
-      }) || null;
+      return findNodeById(state.tree, id, type);
     },
 
     // 获取当前选中的节点

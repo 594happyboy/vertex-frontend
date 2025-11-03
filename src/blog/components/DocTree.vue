@@ -97,7 +97,7 @@
 
     <!-- 隐藏的文件输入 -->
     <input ref="batchInputRef" type="file" accept=".zip" style="display: none" @change="handleBatchFileSelect" />
-    <input ref="importInputRef" type="file" accept=".md,.pdf,.txt" style="display: none" @change="handleImportFileSelect" />
+    <input ref="importInputRef" type="file" :accept="DOCUMENT_ACCEPT" style="display: none" @change="handleImportFileSelect" />
   </div>
 </template>
 
@@ -111,12 +111,12 @@ import { useUiStore } from '../stores/ui';
 import { batchUploadDocuments } from '../api/document';
 import { useTreeMenu } from '../composables/useTreeMenu';
 import TreeNode from './TreeNode.vue';
+import { FILE_SIZE_LIMITS, DOCUMENT_ACCEPT } from '../constants';
+import { createTextFile, extractTitle, validateBatchFile } from '../utils/fileHelpers';
+import { formatBatchUploadResult } from '../utils/uiHelpers';
+import { filterTree } from '../utils/treeHelpers';
 
 const { isMobile } = useResponsive();
-
-// 常量定义
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
-const MAX_FAILED_ITEMS_DISPLAY = 5;
 
 // Stores
 const treeStore = useTreeStore();
@@ -144,7 +144,7 @@ const isSearching = computed(() => normalizedKeyword.value.length > 0);
 
 const tree = computed(() => {
   return isSearching.value 
-    ? filterTree(treeStore.tree, normalizedKeyword.value)
+    ? filterTree(treeStore.tree, normalizedKeyword.value, expandedKeys.value, treeStore.expandNode)
     : treeStore.tree;
 });
 
@@ -161,39 +161,7 @@ const handleRootImportFile = handleRootMenuAction(() => handleImportFile(null));
 const handleRootBatchImport = handleRootMenuAction(() => handleBatchImport(null));
 
 // ===== 搜索功能 =====
-function filterTree(nodes, keyword) {
-  if (!nodes?.length) return [];
-  
-  return nodes.reduce((filtered, node) => {
-    const nameMatch = node.name.toLowerCase().includes(keyword);
-    const isGroup = node.nodeType?.toUpperCase() === 'GROUP';
-    const filteredChildren = isGroup && node.children?.length ? filterTree(node.children, keyword) : [];
-    
-    if (nameMatch || filteredChildren.length > 0) {
-      const filteredNode = { ...node };
-      if (filteredChildren.length > 0) {
-        filteredNode.children = filteredChildren;
-        if (!expandedKeys.value.includes(node.id)) treeStore.expandNode(node.id);
-      }
-      filtered.push(filteredNode);
-    }
-    
-    return filtered;
-  }, []);
-}
-
 const clearSearch = () => searchKeyword.value = '';
-
-// ===== 工具函数 =====
-function createTextFile(title, type) {
-  const config = {
-    md: { content: `开始编写你的文档...`, mime: 'text/markdown', ext: '.md' },
-    txt: { content: '', mime: 'text/plain', ext: '.txt' }
-  }[type];
-  
-  const blob = new Blob([config.content], { type: config.mime });
-  return new File([blob], `${title}${config.ext}`, { type: config.mime });
-}
 
 // ===== 节点操作 =====
 function handleSelect(node, type) {
@@ -307,9 +275,7 @@ async function uploadDocument(file, typeName, groupId) {
     uploading.value = true;
     uiStore.showInfo('文件上传中，请稍候...');
 
-    const fileName = file.name;
-    const title = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-
+    const title = extractTitle(file.name);
     const doc = await docStore.createDoc(title, file, groupId);
     await treeStore.fetchTree();
     treeStore.selectNode(doc.id, 'document');
@@ -332,46 +298,13 @@ function handleBatchImport(groupId) {
   batchInputRef.value?.click();
 }
 
-function validateBatchFile(file) {
-  if (!file.name.toLowerCase().endsWith('.zip')) {
-    return '请选择 ZIP 格式的压缩包';
-  }
-  if (file.size > MAX_FILE_SIZE) {
-    return '文件大小超过限制（最大100MB）';
-  }
-  return null;
-}
-
-function formatBatchResult(result) {
-  const { totalFolders, successCount, failedCount, items } = result;
-  
-  if (failedCount === 0) {
-    return {
-      type: 'success',
-      message: `批量导入成功！共导入 ${totalFolders} 个分组，${successCount} 个文档`
-    };
-  }
-  
-  const failedItems = items.filter(item => !item.success);
-  const displayItems = failedItems.slice(0, MAX_FAILED_ITEMS_DISPLAY);
-  const failedMsg = displayItems.map(item => `${item.name}: ${item.message}`).join('\n');
-  const moreMsg = failedItems.length > MAX_FAILED_ITEMS_DISPLAY 
-    ? `\n...还有${failedItems.length - MAX_FAILED_ITEMS_DISPLAY}个失败` 
-    : '';
-  
-  return {
-    type: 'error',
-    message: `部分导入失败！成功：${successCount}，失败：${failedCount}\n${failedMsg}${moreMsg}`
-  };
-}
-
 async function handleBatchFileSelect(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
   
   if (!file || uploading.value) return;
 
-  const validationError = validateBatchFile(file);
+  const validationError = validateBatchFile(file, FILE_SIZE_LIMITS.BATCH);
   if (validationError) {
     uiStore.showError(validationError);
     return;
@@ -386,7 +319,7 @@ async function handleBatchFileSelect(event) {
     
     if (currentGroupId.value) treeStore.expandNode(currentGroupId.value);
 
-    const { type, message } = formatBatchResult(result);
+    const { type, message } = formatBatchUploadResult(result);
     uiStore[type === 'success' ? 'showSuccess' : 'showError'](message);
   } catch (error) {
     console.error('Batch upload error:', error);

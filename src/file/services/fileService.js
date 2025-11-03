@@ -9,6 +9,7 @@ import {
   batchSortFolders,
   // 文件相关
   uploadFile,
+  uploadAttachment,
   getFileInfo,
   updateFile,
   deleteFile,
@@ -174,6 +175,14 @@ export async function fetchFileInfoService(id, userId) {
  */
 export async function uploadFileService(file, options = {}) {
   const res = await uploadFile(file, options);
+  return mapFile(res);
+}
+
+/**
+ * 上传附件（自动存储到系统/附件文件夹）
+ */
+export async function uploadAttachmentService(file, options = {}) {
+  const res = await uploadAttachment(file, options);
   return mapFile(res);
 }
 

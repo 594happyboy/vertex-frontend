@@ -29,7 +29,7 @@ const { editableTitle, title, isEditing, handleInput } = useDocumentTitle();
 .title-editor {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2xs);
+  gap: var(--spacing-xs);
   min-width: 0;
   flex: 1;
 }
@@ -37,7 +37,7 @@ const { editableTitle, title, isEditing, handleInput } = useDocumentTitle();
 .title-input {
   width: 100%;
   margin: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-2xs) var(--spacing-sm);
   font-size: var(--font-size-md);
   font-weight: 700;
   color: var(--color-text-primary);

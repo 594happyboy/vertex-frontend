@@ -6,7 +6,7 @@
 
 :root {
   /* 基础间距（PC端） - 8px 基准 */
-  --spacing-3xs: 3px;   /* 特别紧凑 */
+  --spacing-3xs: 2px;   /* 特别紧凑 */
   --spacing-2xs: 4px;
   --spacing-xs: 8px;
   --spacing-sm: 12px;
