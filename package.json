@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.0",
+    "@vueuse/core": "^14.0.0",
     "axios": "^1.12.2",
     "dayjs": "^1.11.18",
     "highlight.js": "^11.11.1",

@@ -1,6 +1,6 @@
 <template>
   <div class="folder-tree">
-    <!-- 根目录 -->
+    <!-- 根目录 - 永久展开，不可折叠 -->
     <div 
       class="folder-node-item root-folder"
       :class="{ active: isRootActive }"
@@ -10,40 +10,33 @@
     >
       <span class="expand-placeholder"></span>
       <div class="folder-icon">
-        <Icon icon="mdi:home" />
+        <Icon icon="mdi:folder-open" />
       </div>
       <span class="folder-name">全部文件</span>
       <span v-if="totalFileCount > 0" class="file-count">{{ totalFileCount }}</span>
     </div>
 
-    <!-- 文件夹树 -->
-    <div v-if="!loading && hasFolders" class="folder-list">
-      <FolderTreeNode
-        v-for="folder in folders"
-        :key="folder.id"
-        :folder="folder"
-        :current-folder-id="currentFolderId"
-        :level="0"
-        @select="handleSelect"
-        @context-menu="handleContextMenu"
-        @drop-files="handleDropFiles"
-      />
+    <!-- 根目录的子内容区域（永久展开） -->
+    <div class="root-content">
+      <!-- 文件夹树 -->
+      <div v-if="!loading && hasFolders" class="folder-list">
+        <FolderTreeNode
+          v-for="folder in folders"
+          :key="folder.id"
+          :folder="folder"
+          :current-folder-id="currentFolderId"
+          :level="1"
+          @select="handleSelect"
+          @context-menu="handleContextMenu"
+          @drop-files="handleDropFiles"
+        />
+      </div>
     </div>
 
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <Icon icon="mdi:loading" class="loading-icon" />
       <span>加载中...</span>
-    </div>
-
-    <!-- 空状态 -->
-    <div v-if="!loading && !hasFolders" class="empty-state">
-      <Icon icon="mdi:folder-outline" class="empty-icon" />
-      <p>暂无文件夹</p>
-      <button class="btn-create" @click="$emit('create-folder')">
-        <Icon icon="mdi:plus" />
-        新建文件夹
-      </button>
     </div>
 
     <!-- 右键菜单 -->
@@ -216,21 +209,22 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 文件夹树容器 */
 .folder-tree {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 8px 6px;
+  padding: var(--spacing-xs) var(--spacing-mobile-xs);
 }
 
 .folder-node-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: 6px;
+  gap: var(--spacing-mobile-xs);
+  padding: var(--spacing-mobile-xs) var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   position: relative;
 }
 
@@ -245,21 +239,32 @@ onUnmounted(() => {
 }
 
 .root-folder {
-  margin-bottom: 4px;
-  border-bottom: 1px solid rgba(200, 210, 255, 0.3);
-  padding-bottom: 6px;
+  margin-bottom: var(--spacing-xs);
+  background: rgba(96, 118, 255, 0.05);
+  border: 1px solid rgba(96, 118, 255, 0.2);
+  font-weight: 600;
+}
+
+.root-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-left: var(--spacing-sm);
+  padding-left: var(--spacing-sm);
+  border-left: 2px solid rgba(96, 118, 255, 0.2);
 }
 
 .expand-placeholder {
-  width: 18px;
-  height: 18px;
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  flex-shrink: 0;
 }
 
 .folder-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: var(--icon-size-md);
   color: #6076ff;
   flex-shrink: 0;
 }
@@ -277,9 +282,9 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   min-width: 20px;
-  height: 18px;
+  height: var(--icon-size-md);
   padding: 0 5px;
-  border-radius: 9px;
+  border-radius: var(--border-radius-full);
   background: rgba(96, 118, 255, 0.12);
   color: #3a54f5;
   font-size: 10px;
@@ -293,56 +298,21 @@ onUnmounted(() => {
   gap: 2px;
 }
 
-.loading-state,
-.empty-state {
+.loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 20px 12px;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-lg) var(--spacing-sm);
   color: rgba(47, 59, 128, 0.6);
   text-align: center;
 }
 
 .loading-icon {
-  font-size: 24px;
+  font-size: var(--icon-size-xl);
   color: rgba(96, 118, 255, 0.7);
   animation: spin 1s linear infinite;
-}
-
-.empty-icon {
-  font-size: 40px;
-  color: rgba(96, 118, 255, 0.3);
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 13px;
-}
-
-.btn-create {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(96, 118, 255, 0.35);
-  background: rgba(96, 118, 255, 0.08);
-  color: #1f256a;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-create:hover {
-  background: rgba(96, 118, 255, 0.15);
-  border-color: rgba(96, 118, 255, 0.5);
-}
-
-.btn-create :deep(svg) {
-  font-size: 16px;
 }
 
 /* 右键菜单 */
@@ -356,28 +326,28 @@ onUnmounted(() => {
   position: fixed;
   z-index: 1000;
   min-width: 180px;
-  padding: 6px;
-  border-radius: 12px;
+  padding: var(--spacing-mobile-xs);
+  border-radius: var(--border-radius-xl);
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(200, 210, 255, 0.4);
   box-shadow: 0 12px 32px rgba(47, 59, 128, 0.15);
-  animation: menuFadeIn 0.15s ease;
+  animation: menuFadeIn var(--transition-fast);
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--spacing-sm);
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--spacing-sm) var(--spacing-sm);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   background: transparent;
   color: #1f256a;
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: var(--transition-fast);
   text-align: left;
 }
 
@@ -394,12 +364,12 @@ onUnmounted(() => {
 }
 
 .menu-item :deep(svg) {
-  font-size: 16px;
+  font-size: var(--icon-size-sm);
 }
 
 .menu-divider {
   height: 1px;
-  margin: 6px 0;
+  margin: var(--spacing-mobile-xs) 0;
   background: rgba(200, 210, 255, 0.3);
 }
 

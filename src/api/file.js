@@ -15,10 +15,11 @@ export function getFolderTree(params = {}) {
  * 获取文件夹详情
  * @param {number} id
  * @param {number} userId
+ * @param {boolean} includeAncestors - 是否包含祖先路径信息，默认false
  * @returns {Promise<Object>}
  */
-export function getFolderInfo(id, userId) {
-  return request.get(`/api/folders/${id}`, { params: { userId } });
+export function getFolderInfo(id, userId, includeAncestors = false) {
+  return request.get(`/api/folders/${id}`, { params: { userId, includeAncestors } });
 }
 
 /**
@@ -101,14 +102,7 @@ export function uploadFile(file, options = {}) {
   });
 }
 
-/**
- * 获取文件列表
- * @param {Object} params - { userId, folderId?, page?, size?, keyword?, sortBy?, order? }
- * @returns {Promise<Object>}
- */
-export function getFileList(params = {}) {
-  return request.get('/api/files', { params });
-}
+// 已移除getFileList - 不再支持旧版API，请使用getFolderChildren
 
 /**
  * 获取文件详情
@@ -195,8 +189,8 @@ export function getFileStatistics(userId) {
 // ==================== 回收站 API ====================
 
 /**
- * 获取回收站文件列表
- * @param {Object} params - { userId, page?, size? }
+ * 获取回收站文件列表（游标分页）
+ * @param {Object} params - { userId, cursor?, limit? }
  * @returns {Promise<Object>}
  */
 export function getRecycleBinList(params = {}) {
@@ -229,4 +223,49 @@ export function permanentDeleteFile(id, userId) {
  */
 export function clearCache() {
   return request.post('/api/files/cache/clear');
+}
+
+// ==================== 游标分页 API (新版) ====================
+
+/**
+ * 获取根目录信息(含第一批子文件夹)
+ * @param {number} userId
+ * @param {number} limit - 返回的子文件夹数量，默认50
+ * @returns {Promise<Object>}
+ */
+export function getRootFolder(userId, limit = 50) {
+  return request.get('/api/folders/root', { params: { userId, limit } });
+}
+
+/**
+ * 获取目录内容(文件夹+文件,游标分页)
+ * @param {string|null} folderId - 文件夹ID,null表示根目录
+ * @param {Object} params - { userId, cursor?, limit?, keyword?, orderBy?, order?, type? }
+ * @returns {Promise<Object>}
+ */
+export function getFolderChildren(folderId, params = {}) {
+  const id = folderId || 'root';
+  return request.get(`/api/folders/${id}/children`, { params });
+}
+
+/**
+ * 获取子文件夹列表(仅文件夹,用于树节点懒加载)
+ * @param {string|null} folderId
+ * @param {Object} params - { userId, cursor?, limit? }
+ * @returns {Promise<Object>}
+ */
+export function getFolderSubfolders(folderId, params = {}) {
+  const id = folderId || 'root';
+  return request.get(`/api/folders/${id}/subfolders`, { params });
+}
+
+/**
+ * 在指定目录搜索
+ * @param {string|null} folderId - 搜索范围
+ * @param {Object} params - { userId, keyword, cursor?, limit?, type?, orderBy?, order? }
+ * @returns {Promise<Object>}
+ */
+export function searchInFolder(folderId, params = {}) {
+  const id = folderId || 'root';
+  return request.get(`/api/folders/${id}/search`, { params });
 }

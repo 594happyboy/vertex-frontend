@@ -9,7 +9,6 @@ import {
   batchSortFolders,
   // 文件相关
   uploadFile,
-  getFileList,
   getFileInfo,
   updateFile,
   deleteFile,
@@ -23,6 +22,11 @@ import {
   restoreFile,
   permanentDeleteFile,
   clearCache,
+  // 游标分页 API
+  getRootFolder,
+  getFolderChildren,
+  getFolderSubfolders,
+  searchInFolder,
 } from '@/api/file';
 
 // ==================== 数据映射函数 ====================
@@ -54,19 +58,25 @@ function mapFolder(dto) {
 function mapFile(dto) {
   return {
     id: dto.id,
-    name: dto.fileName,
-    size: dto.fileSize,
-    sizeFormatted: dto.fileSizeFormatted,
-    mimeType: dto.fileType,
-    extension: dto.fileExtension,
+    type: 'file',
+    name: dto.fileName || dto.name,
+    size: dto.fileSize || dto.size,
+    sizeFormatted: dto.fileSizeFormatted || dto.sizeFormatted,
+    mimeType: dto.fileType || dto.mimeType,
+    extension: dto.fileExtension || dto.extension,
     folderId: dto.folderId || null,
     folderName: dto.folderName || null,
     description: dto.description || null,
-    uploadTime: dto.uploadTime,
-    updateTime: dto.updateTime,
-    downloadCount: dto.downloadCount || 0,
+    createdAt: dto.uploadTime || dto.createdAt,
+    updatedAt: dto.updateTime || dto.updatedAt,
+    owner: dto.owner || null,
+    metadata: dto.metadata || {
+      downloadCount: dto.downloadCount || 0,
+    },
     downloadUrl: dto.downloadUrl,
     previewUrl: dto.previewUrl || null,
+    thumbnailUrl: dto.thumbnailUrl || null,
+    tags: dto.tags || [],
     deletedAt: dto.deletedAt || null,
     daysUntilPermanentDeletion: dto.daysUntilPermanentDeletion || null,
   };
@@ -149,22 +159,7 @@ export async function batchSortFoldersService(items, userId) {
 
 // ==================== 文件服务 ====================
 
-/**
- * 获取文件列表
- */
-export async function fetchFilesService(params) {
-  const res = await getFileList(params);
-  
-  if (!res || !Array.isArray(res.files)) {
-    return { items: [], total: 0, currentFolder: null };
-  }
-  
-  return {
-    items: res.files.map(mapFile),
-    total: res.total || 0,
-    currentFolder: res.currentFolder || null,
-  };
-}
+// 已移除fetchFilesService - 请使用fetchFolderChildrenService代替
 
 /**
  * 获取文件详情
@@ -257,18 +252,31 @@ export async function fetchStatisticsService(userId) {
 // ==================== 回收站服务 ====================
 
 /**
- * 获取回收站文件列表
+ * 获取回收站文件列表（游标分页）
  */
 export async function fetchRecycleBinService(params) {
   const res = await getRecycleBinList(params);
   
-  if (!res || !Array.isArray(res.files)) {
-    return { items: [], total: 0 };
+  if (!res || !res.items) {
+    return { 
+      items: [], 
+      pagination: {
+        limit: params.limit || 50,
+        nextCursor: null,
+        hasMore: false,
+        total: 0,
+      }
+    };
   }
   
   return {
-    items: res.files.map(mapFile),
-    total: res.total || 0,
+    items: res.items.map(mapResource),  // 使用 mapResource 统一映射
+    pagination: res.pagination || {
+      limit: params.limit || 50,
+      nextCursor: null,
+      hasMore: false,
+      total: res.items.length,
+    },
   };
 }
 
@@ -293,4 +301,130 @@ export async function permanentDeleteFileService(id, userId) {
  */
 export async function clearCacheService() {
   return await clearCache();
+}
+
+// ==================== 游标分页服务 (新版) ====================
+
+/**
+ * 映射资源数据(统一文件夹和文件)
+ */
+function mapResource(dto) {
+  // 公共字段
+  const base = {
+    id: dto.id,
+    type: dto.type,
+    name: dto.name,
+    parentId: dto.parentId || null,
+    owner: dto.owner || null,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+    metadata: dto.metadata || {},
+  };
+  
+  if (dto.type === 'folder') {
+    return {
+      ...base,
+      childFolderCount: dto.childFolderCount || 0,
+      childFileCount: dto.childFileCount || 0,
+      color: dto.color || null,
+      icon: dto.icon || null,
+      description: dto.description || null,
+    };
+  } else {
+    return {
+      ...base,
+      size: dto.size,
+      sizeFormatted: dto.sizeFormatted,
+      mimeType: dto.mimeType,
+      extension: dto.extension,
+      thumbnailUrl: dto.thumbnailUrl || null,
+      downloadUrl: dto.downloadUrl,
+      previewUrl: dto.previewUrl || null,
+      folderId: dto.folderId || null,
+      tags: dto.tags || [],
+      description: dto.description || null,
+    };
+  }
+}
+
+/**
+ * 获取根目录信息
+ */
+export async function fetchRootFolderService(userId, limit = 50) {
+  const res = await getRootFolder(userId, limit);
+  return {
+    id: res.id || 'root',
+    type: res.type || 'folder',
+    name: res.name || '我的文件',
+    childFolderCount: res.childFolderCount || 0,
+    childFileCount: res.childFileCount || 0,
+    // 根据OpenAPI规范，children是PaginatedResponseFolderResource类型
+    children: res.children ? {
+      items: res.children.items?.map(mapResource) || [],
+      pagination: res.children.pagination ? {
+        limit: res.children.pagination.limit || limit,
+        nextCursor: res.children.pagination.nextCursor || null,
+        hasMore: res.children.pagination.hasMore || false,
+        total: res.children.pagination.total,
+      } : {
+        limit,
+        nextCursor: null,
+        hasMore: false,
+        total: 0,
+      },
+    } : null,
+  };
+}
+
+/**
+ * 获取目录内容(游标分页)
+ * @param {string|null} folderId
+ * @param {Object} params - { userId, cursor, limit, keyword, orderBy, order, type }
+ */
+export async function fetchFolderChildrenService(folderId, params) {
+  const res = await getFolderChildren(folderId, params);
+  // 根据OpenAPI规范，返回的是PaginatedResponseBaseResource
+  return {
+    items: (res.items || []).map(mapResource),
+    pagination: {
+      limit: res.pagination?.limit || params.limit || 50,
+      nextCursor: res.pagination?.nextCursor || null,
+      hasMore: res.pagination?.hasMore || false,
+      total: res.pagination?.total,
+    },
+  };
+}
+
+/**
+ * 获取子文件夹列表(树节点懒加载)
+ */
+export async function fetchFolderSubfoldersService(folderId, params) {
+  const res = await getFolderSubfolders(folderId, params);
+  // 根据OpenAPI规范，返回的是PaginatedResponseFolderResource
+  return {
+    items: (res.items || []).map(mapResource),
+    pagination: {
+      limit: res.pagination?.limit || params.limit || 100,
+      nextCursor: res.pagination?.nextCursor || null,
+      hasMore: res.pagination?.hasMore || false,
+      total: res.pagination?.total,
+    },
+  };
+}
+
+/**
+ * 在目录中搜索
+ */
+export async function searchInFolderService(folderId, params) {
+  const res = await searchInFolder(folderId, params);
+  // 根据OpenAPI规范，返回的是PaginatedResponseBaseResource
+  return {
+    items: (res.items || []).map(mapResource),
+    pagination: {
+      limit: res.pagination?.limit || params.limit || 50,
+      nextCursor: res.pagination?.nextCursor || null,
+      hasMore: res.pagination?.hasMore || false,
+      total: res.pagination?.total,
+    },
+  };
 }

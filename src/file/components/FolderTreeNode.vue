@@ -157,12 +157,12 @@ function handleDrop(event) {
 .folder-node-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  padding-left: calc(8px + v-bind('level * 18') * 1px);
-  border-radius: 6px;
+  gap: var(--spacing-mobile-xs);
+  padding: var(--spacing-mobile-xs) var(--spacing-xs);
+  padding-left: calc(var(--spacing-xs) + v-bind('(level - 1) * 18') * 1px);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   position: relative;
 }
 
@@ -184,15 +184,16 @@ function handleDrop(event) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
   padding: 0;
   border: none;
   background: transparent;
   color: rgba(47, 59, 128, 0.6);
   cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition-base);
+  flex-shrink: 0;
 }
 
 .expand-btn:hover {
@@ -201,19 +202,20 @@ function handleDrop(event) {
 }
 
 .expand-btn :deep(svg) {
-  font-size: 18px;
+  font-size: var(--icon-size-md);
 }
 
 .expand-placeholder {
-  width: 18px;
-  height: 18px;
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  flex-shrink: 0;
 }
 
 .folder-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: var(--icon-size-md);
   flex-shrink: 0;
 }
 
@@ -230,9 +232,9 @@ function handleDrop(event) {
   align-items: center;
   justify-content: center;
   min-width: 20px;
-  height: 18px;
+  height: var(--icon-size-md);
   padding: 0 5px;
-  border-radius: 9px;
+  border-radius: var(--border-radius-full);
   background: rgba(96, 118, 255, 0.12);
   color: #3a54f5;
   font-size: 10px;
@@ -247,7 +249,7 @@ function handleDrop(event) {
 /* 展开动画 */
 .expand-enter-active,
 .expand-leave-active {
-  transition: all 0.3s ease;
+  transition: var(--transition-slow);
   max-height: 500px;
 }
 

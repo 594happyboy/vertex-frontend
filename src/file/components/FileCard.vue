@@ -30,13 +30,13 @@
 
     <!-- 操作按钮 -->
     <div class="file-actions">
-      <button class="action-btn" @click.stop="handleDownload" title="下载">
+      <button v-if="file.type !== 'folder'" class="action-btn" @click.stop="handleDownload" title="下载">
         <Icon icon="mdi:download" />
       </button>
-      <button class="action-btn" @click.stop="handleCopyUrl" title="复制链接">
+      <button v-if="file.type !== 'folder'" class="action-btn" @click.stop="handleCopyUrl" title="复制链接">
         <Icon icon="mdi:link" />
       </button>
-      <button class="action-btn" @click.stop="handleShowDetail" title="查看详情">
+      <button v-if="file.type !== 'folder'" class="action-btn" @click.stop="handleShowDetail" title="查看详情">
         <Icon icon="mdi:information" />
       </button>
       <button class="action-btn danger" @click.stop="handleDelete" title="删除">

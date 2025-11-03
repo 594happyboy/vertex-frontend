@@ -3,27 +3,13 @@
     <div class="tree-surface">
       <div class="tree-body">
         <div class="tree-list-wrapper">
-          <!-- 顶部操作区：搜索框 + 操作按钮 -->
+          <!-- 顶部操作区：搜索框 -->
           <div class="tree-actions">
             <div class="search-box">
               <Icon icon="mdi:magnify" class="search-icon" />
               <input v-model="searchKeyword" type="text" placeholder="搜索文档或分组..." />
               <button v-if="searchKeyword" class="search-clear" type="button" @click="clearSearch">
                 <Icon icon="mdi:close-circle" />
-              </button>
-            </div>
-            <div class="action-buttons">
-              <button class="btn-tree-action" @click="$emit('refresh')" title="刷新目录">
-                <Icon icon="mdi:refresh" />
-              </button>
-              <button class="btn-tree-action btn-create-group" @click="handleCreateGroup(null)" title="新建分组">
-                <Icon icon="mdi:folder-plus" />
-              </button>
-              <button class="btn-tree-action btn-create-doc" @click="showCreateDocDialog = true" title="新建文档">
-                <Icon icon="mdi:file-document-plus" />
-              </button>
-              <button class="btn-tree-action btn-import" @click="showImportDialog = true" title="导入文档">
-                <Icon icon="mdi:file-import" />
               </button>
             </div>
           </div>
@@ -52,75 +38,65 @@
               <p class="tree-status__hint">试试其他搜索关键词</p>
             </div>
 
-            <!-- 真正的空状态 -->
-            <div v-else-if="tree.length === 0 && !isSearching" class="tree-status tree-status--empty">
-              <Icon icon="mdi:folder-open-outline" />
-              <p class="tree-status__text">暂无分组，创建一个新的分组开始组织内容。</p>
-              <button class="btn-primary" @click="handleCreateGroup(null)">
-                <Icon icon="mdi:plus" />
-                <span>创建第一个分组</span>
-              </button>
-            </div>
-
             <!-- 目录树列表 -->
             <div v-else class="tree-list" data-scroll>
-              <TreeNode v-for="node in tree" :key="`${node.nodeType}-${node.id}`" :node="node" :depth="0" :selected-id="selectedId"
-                :selected-type="selectedType" :expanded-keys="expandedKeys" @select="handleSelect" @toggle="handleToggle"
-                @create-group="handleCreateGroup" @create-doc="handleCreateDoc" @batch-import="handleBatchImport"
-                @rename="handleRename" @delete="handleDelete" />
+              <!-- 固定根目录 -->
+              <div class="root-directory">
+                <div 
+                  class="root-item"
+                  :class="{ 'root-active': !selectedId }"
+                  @click="handleSelectRoot"
+                >
+                  <div class="root-leading">
+                    <span class="root-icon">
+                      <Icon icon="mdi:folder-open" />
+                    </span>
+                    <span class="root-label">全部文档</span>
+                  </div>
+                  
+                  <div class="root-actions" ref="rootMenuRef">
+                    <button class="tree-action-btn" @click.stop="toggleRootMenu" title="更多操作">
+                      <Icon icon="mdi:dots-horizontal" />
+                    </button>
+                    <transition name="tree-menu-fade-scale">
+                      <div v-if="showRootMenu" class="tree-action-menu">
+                        <button class="tree-menu-item" @click="handleRootCreateGroup">
+                          <Icon icon="mdi:folder-plus" />
+                          <span>新建子分组</span>
+                        </button>
+                        <button class="tree-menu-item" @click="handleRootCreateDoc">
+                          <Icon icon="mdi:file-document-plus" />
+                          <span>新建文档</span>
+                        </button>
+                        <button class="tree-menu-item" @click="handleRootImportFile">
+                          <Icon icon="mdi:file-import" />
+                          <span>导入文档</span>
+                        </button>
+                        <button class="tree-menu-item" @click="handleRootBatchImport">
+                          <Icon icon="mdi:folder-zip" />
+                          <span>批量导入</span>
+                        </button>
+                      </div>
+                    </transition>
+                  </div>
+                </div>
+                
+                <!-- 子节点 -->
+                <div class="root-children">
+                  <TreeNode v-for="node in tree" :key="`${node.nodeType}-${node.id}`" :node="node" :depth="1" :selected-id="selectedId"
+                    :selected-type="selectedType" :expanded-keys="expandedKeys" :is-root-child="true" @select="handleSelect" @toggle="handleToggle"
+                    @create-group="handleCreateGroup" @create-doc="handleCreateDoc" @import-file="handleImportFile"
+                    @batch-import="handleBatchImport" @rename="handleRename" @delete="handleDelete" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <input ref="batchInputRef" type="file" accept=".zip" style="display: none" @change="handleBatchFileSelect" />
-    
-    <!-- 新建文档弹窗 -->
-    <div v-if="showCreateDocDialog" class="mini-dialog-overlay" @click.self="showCreateDocDialog = false">
-      <div class="mini-dialog">
-        <div class="mini-dialog-header">
-          <h4>新建文档</h4>
-          <button class="btn-dialog-close" @click="showCreateDocDialog = false">
-            <Icon icon="mdi:close" />
-          </button>
-        </div>
-        <div class="mini-dialog-body">
-          <button class="mini-option" @click="handleCreateNewDoc('md')">
-            <Icon icon="mdi:language-markdown" />
-            <span>Markdown 文档</span>
-          </button>
-          <button class="mini-option" @click="handleCreateNewDoc('txt')">
-            <Icon icon="mdi:file-document" />
-            <span>TXT 文档</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 导入文档弹窗 -->
-    <div v-if="showImportDialog" class="mini-dialog-overlay" @click.self="showImportDialog = false">
-      <div class="mini-dialog">
-        <div class="mini-dialog-header">
-          <h4>导入文档</h4>
-          <button class="btn-dialog-close" @click="showImportDialog = false">
-            <Icon icon="mdi:close" />
-          </button>
-        </div>
-        <div class="mini-dialog-body">
-          <button class="mini-option" @click="handleImportFile">
-            <Icon icon="mdi:file-import" />
-            <span>导入文件</span>
-          </button>
-          <button class="mini-option" @click="handleImportBatch">
-            <Icon icon="mdi:folder-zip" />
-            <span>批量导入</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- 隐藏的文件输入 -->
+    <input ref="batchInputRef" type="file" accept=".zip" style="display: none" @change="handleBatchFileSelect" />
     <input ref="importInputRef" type="file" accept=".md,.pdf,.txt" style="display: none" @change="handleImportFileSelect" />
   </div>
 </template>
@@ -133,6 +109,7 @@ import { useTreeStore } from '../stores/tree';
 import { useDocStore } from '../stores/doc';
 import { useUiStore } from '../stores/ui';
 import { batchUploadDocuments } from '../api/document';
+import { useTreeMenu } from '../composables/useTreeMenu';
 import TreeNode from './TreeNode.vue';
 
 const { isMobile } = useResponsive();
@@ -152,8 +129,14 @@ const importInputRef = ref(null);
 const currentGroupId = ref(null);
 const uploading = ref(false);
 const searchKeyword = ref('');
-const showCreateDocDialog = ref(false);
-const showImportDialog = ref(false);
+
+// 使用菜单组合式函数
+const { 
+  showMenu: showRootMenu, 
+  menuRef: rootMenuRef, 
+  toggleMenu: toggleRootMenu,
+  handleMenuAction: handleRootMenuAction
+} = useTreeMenu();
 
 // 计算属性
 const normalizedKeyword = computed(() => searchKeyword.value.trim().toLowerCase());
@@ -171,7 +154,11 @@ const selectedId = computed(() => treeStore.selectedId);
 const selectedType = computed(() => treeStore.selectedType);
 const expandedKeys = computed(() => treeStore.expandedKeys);
 
-const emit = defineEmits(['refresh']);
+// ===== 根目录菜单操作 =====
+const handleRootCreateGroup = handleRootMenuAction(() => handleCreateGroup(null));
+const handleRootCreateDoc = handleRootMenuAction(() => handleCreateDoc(null));
+const handleRootImportFile = handleRootMenuAction(() => handleImportFile(null));
+const handleRootBatchImport = handleRootMenuAction(() => handleBatchImport(null));
 
 // ===== 搜索功能 =====
 function filterTree(nodes, keyword) {
@@ -200,7 +187,7 @@ const clearSearch = () => searchKeyword.value = '';
 // ===== 工具函数 =====
 function createTextFile(title, type) {
   const config = {
-    md: { content: `# ${title}\n\n开始编写你的文档...`, mime: 'text/markdown', ext: '.md' },
+    md: { content: `开始编写你的文档...`, mime: 'text/markdown', ext: '.md' },
     txt: { content: '', mime: 'text/plain', ext: '.txt' }
   }[type];
   
@@ -218,6 +205,10 @@ function handleSelect(node, type) {
 
 function handleToggle(nodeId) {
   treeStore.toggleExpand(nodeId);
+}
+
+function handleSelectRoot() {
+  treeStore.selectNode(null, null);
 }
 
 // ===== CRUD 操作 =====
@@ -286,37 +277,10 @@ async function handleDelete(node, type) {
   }
 }
 
-// ===== 新建文档 =====
-async function handleCreateNewDoc(type) {
-  const title = prompt('请输入文档标题：');
-  if (!title?.trim()) return;
-  
-  showCreateDocDialog.value = false;
-
-  try {
-    const trimmedTitle = title.trim();
-    const file = createTextFile(trimmedTitle, type);
-    const doc = await docStore.createDoc(trimmedTitle, file);
-    
-    await treeStore.fetchTree();
-    treeStore.selectNode(doc.id, 'document');
-    
-    const typeName = type === 'md' ? 'Markdown' : 'TXT';
-    uiStore.showSuccess(`${typeName} 文档创建成功`);
-  } catch (error) {
-    uiStore.showError(error.message || '创建文档失败');
-  }
-}
-
 // ===== 导入文档 =====
-function handleImportFile() {
-  showImportDialog.value = false;
+function handleImportFile(groupId) {
+  currentGroupId.value = groupId;
   importInputRef.value?.click();
-}
-
-function handleImportBatch() {
-  showImportDialog.value = false;
-  handleBatchImport(null);
 }
 
 async function handleImportFileSelect(event) {
@@ -333,10 +297,10 @@ async function handleImportFileSelect(event) {
     return;
   }
 
-  await uploadDocument(file, typeMap[fileExt]);
+  await uploadDocument(file, typeMap[fileExt], currentGroupId.value);
 }
 
-async function uploadDocument(file, typeName) {
+async function uploadDocument(file, typeName, groupId) {
   if (uploading.value) return;
 
   try {
@@ -346,9 +310,11 @@ async function uploadDocument(file, typeName) {
     const fileName = file.name;
     const title = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
 
-    const doc = await docStore.createDoc(title, file);
+    const doc = await docStore.createDoc(title, file, groupId);
     await treeStore.fetchTree();
     treeStore.selectNode(doc.id, 'document');
+    
+    if (groupId) treeStore.expandNode(groupId);
     
     uiStore.showSuccess(`${typeName} 文档导入成功`);
   } catch (error) {
@@ -356,6 +322,7 @@ async function uploadDocument(file, typeName) {
     uiStore.showError(error.message || '文件上传失败');
   } finally {
     uploading.value = false;
+    currentGroupId.value = null;
   }
 }
 
@@ -415,7 +382,7 @@ async function handleBatchFileSelect(event) {
     uiStore.showInfo('正在上传压缩包，请稍候...');
 
     const result = await batchUploadDocuments(file, currentGroupId.value);
-    emit('refresh');
+    await treeStore.fetchTree();
     
     if (currentGroupId.value) treeStore.expandNode(currentGroupId.value);
 
@@ -432,6 +399,8 @@ async function handleBatchFileSelect(event) {
 </script>
 
 <style scoped>
+@import '../styles/tree-menu.css';
+
 .doc-tree {
   position: relative;
   height: 100%;
@@ -466,29 +435,32 @@ async function handleBatchFileSelect(event) {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  flex: 1;
+  width: 100%;
   min-width: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-lg);
-  background: var(--color-bg-primary);
+  padding: 0 var(--spacing-sm);
+  height: 38px;
+  border-radius: var(--border-radius-xl);
+  background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 4px rgba(15, 23, 42, 0.04);
   transition: var(--transition-base);
 }
 
 @media (max-width: 768px) {
   .search-box {
-    padding: var(--spacing-mobile-sm) var(--spacing-mobile-sm);
+    padding: 0 var(--spacing-mobile-sm);
+    height: 38px;
   }
 }
 
 .search-box:focus-within {
   border-color: var(--color-border-focus);
-  box-shadow: var(--shadow-focus);
+  box-shadow: 0 0 0 3px var(--color-primary-light), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .search-icon {
   font-size: var(--icon-size-md);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
   flex-shrink: 0;
 }
 
@@ -522,12 +494,12 @@ async function handleBatchFileSelect(event) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--icon-size-lg);
-  height: var(--icon-size-lg);
+  width: 24px;
+  height: 24px;
   border-radius: var(--border-radius-full);
   border: none;
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
   cursor: pointer;
   transition: var(--transition-fast);
   flex-shrink: 0;
@@ -535,8 +507,8 @@ async function handleBatchFileSelect(event) {
 
 @media (max-width: 768px) {
   .search-clear {
-    width: var(--icon-size-mobile-lg);
-    height: var(--icon-size-mobile-lg);
+    width: 22px;
+    height: 22px;
   }
 }
 
@@ -569,111 +541,30 @@ async function handleBatchFileSelect(event) {
   display: flex;
   flex-direction: column;
   border-radius: var(--border-radius-xl);
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
-/* 目录树顶部操作区（搜索框 + 操作按钮） */
+/* 目录树顶部操作区（搜索框） */
 .tree-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-tertiary);
+  background: var(--color-bg-primary);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.05);
   flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
   .tree-actions {
-    padding: var(--spacing-mobile-sm);
+    padding: var(--spacing-mobile-sm) var(--spacing-mobile-md);
     gap: var(--spacing-mobile-xs);
   }
-}
-
-.action-buttons {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  flex-wrap: wrap;
-}
-
-@media (max-width: 768px) {
-  .action-buttons {
-    gap: var(--spacing-mobile-2xs);
-  }
-}
-
-.btn-tree-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--btn-height-sm);
-  height: var(--btn-height-sm);
-  border-radius: var(--border-radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: var(--transition-base);
-}
-
-.btn-tree-action :deep(svg) {
-  font-size: var(--icon-size-md);
-}
-
-@media (max-width: 768px) {
-  .btn-tree-action {
-    width: var(--btn-height-mobile-sm);
-    height: var(--btn-height-mobile-sm);
-    flex: 1;
-    min-width: 0;
-  }
-
-  .btn-tree-action :deep(svg) {
-    font-size: var(--icon-size-mobile-md);
-  }
-}
-
-.btn-tree-action:hover {
-  transform: translateY(-1px);
-  border-color: var(--color-border-hover);
-  background: var(--color-bg-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-tree-action.btn-create-group {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.btn-tree-action.btn-create-group:hover {
-  background: var(--color-primary-lighter);
-  border-color: var(--color-primary);
-}
-
-.btn-tree-action.btn-create-doc {
-  background: var(--color-success-light);
-  border-color: var(--color-success);
-  color: var(--color-success);
-}
-
-.btn-tree-action.btn-create-doc:hover {
-  background: var(--color-success-lighter);
-  border-color: var(--color-success);
-}
-
-.btn-tree-action.btn-import {
-  background: var(--color-warning-light);
-  border-color: var(--color-warning);
-  color: var(--color-warning);
-}
-
-.btn-tree-action.btn-import:hover {
-  background: var(--color-warning-lighter);
-  border-color: var(--color-warning);
 }
 
 /* 目录树列表容器（包含状态和列表） */
@@ -713,15 +604,6 @@ async function handleBatchFileSelect(event) {
 
 .tree-status--error {
   color: var(--color-danger);
-}
-
-.tree-status--empty {
-  color: var(--color-text-secondary);
-}
-
-.tree-status--empty :deep(svg) {
-  font-size: var(--icon-size-4xl);
-  color: var(--color-text-tertiary);
 }
 
 .tree-status--no-results {
@@ -767,48 +649,147 @@ async function handleBatchFileSelect(event) {
   animation: spin 1s linear infinite;
 }
 
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--btn-padding-sm);
-  border-radius: var(--border-radius-xl);
-  border: none;
-  background: var(--gradient-primary);
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-base);
-}
-
-@media (max-width: 768px) {
-  .btn-primary {
-    padding: var(--btn-padding-mobile-sm);
-    font-size: var(--font-size-mobile-sm);
-  }
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-primary);
-}
-
-.btn-primary:deep(svg) {
-  color: var(--color-text-inverse);
-  font-size: var(--icon-size-xl);
-}
-
+/* 目录树列表 */
 .tree-list {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-sm);
   min-height: 0;
   width: 100%;
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.05) 0%, rgba(148, 163, 184, 0) 20%);
 }
 
 @media (max-width: 768px) {
   .tree-list {
-    padding: var(--spacing-mobile-xs);
+    padding: var(--spacing-mobile-sm) var(--spacing-mobile-sm);
+  }
+}
+
+/* 固定根目录样式 */
+.root-directory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.root-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-2xs) var(--spacing-xs);
+  margin-bottom: var(--spacing-2xs);
+  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.root-item:has(.tree-action-menu) {
+  z-index: var(--z-dropdown);
+}
+
+.root-item:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.root-item.root-active {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.root-leading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.root-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--border-radius-lg);
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  flex-shrink: 0;
+  transition: var(--transition-fast);
+}
+
+.root-item.root-active .root-icon {
+  background: var(--color-primary);
+  color: var(--color-bg-primary);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.root-icon :deep(svg) {
+  font-size: 16px;
+}
+
+.root-label {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.root-actions {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3xs);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+}
+
+.root-item:hover .root-actions,
+.root-item.root-active .root-actions,
+.root-actions:has(.tree-action-menu) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.root-children {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xs);
+  margin-left: var(--spacing-md);
+  padding-left: var(--spacing-sm);
+  border-left: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+@media (max-width: 768px) {
+  .root-item {
+    padding: var(--spacing-mobile-xs) var(--spacing-mobile-md);
+    margin-bottom: var(--spacing-mobile-xs);
+  }
+
+  .root-icon {
+    width: var(--icon-size-mobile-xl);
+    height: var(--icon-size-mobile-xl);
+  }
+
+  .root-icon :deep(svg) {
+    font-size: var(--icon-size-mobile-md);
+  }
+
+  .root-label {
+    font-size: var(--font-size-mobile-sm);
+  }
+
+  .root-children {
+    margin-left: var(--spacing-mobile-sm);
+    padding-left: var(--spacing-mobile-sm);
   }
 }
 
@@ -854,157 +835,6 @@ async function handleBatchFileSelect(event) {
     transform: scale(1.05);
     opacity: 1;
   }
-}
-
-/* 小弹窗样式 */
-.mini-dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--color-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-  backdrop-filter: blur(4px);
-}
-
-.mini-dialog {
-  background: var(--color-bg-primary);
-  border-radius: var(--border-radius-2xl);
-  box-shadow: var(--shadow-2xl);
-  width: 90%;
-  max-width: 320px;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-}
-
-.mini-dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-tertiary);
-}
-
-@media (max-width: 768px) {
-  .mini-dialog-header {
-    padding: var(--spacing-mobile-sm) var(--spacing-mobile-md);
-  }
-}
-
-.mini-dialog-header h4 {
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-@media (max-width: 768px) {
-  .mini-dialog-header h4 {
-    font-size: var(--font-size-mobile-md);
-  }
-}
-
-.btn-dialog-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--btn-height-xs);
-  height: var(--btn-height-xs);
-  border-radius: var(--border-radius-md);
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-@media (max-width: 768px) {
-  .btn-dialog-close {
-    width: var(--btn-height-mobile-xs);
-    height: var(--btn-height-mobile-xs);
-  }
-}
-
-.btn-dialog-close:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
-}
-
-.btn-dialog-close :deep(svg) {
-  font-size: var(--icon-size-md);
-}
-
-@media (max-width: 768px) {
-  .btn-dialog-close :deep(svg) {
-    font-size: var(--icon-size-mobile-md);
-  }
-}
-
-.mini-dialog-body {
-  padding: var(--spacing-sm);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-@media (max-width: 768px) {
-  .mini-dialog-body {
-    padding: var(--spacing-mobile-sm);
-    gap: var(--spacing-mobile-xs);
-  }
-}
-
-.mini-option {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-  transition: var(--transition-fast);
-  min-height: var(--touch-target-min);
-}
-
-@media (max-width: 768px) {
-  .mini-option {
-    gap: var(--spacing-mobile-sm);
-    padding: var(--spacing-mobile-sm) var(--spacing-mobile-md);
-    font-size: var(--font-size-mobile-base);
-  }
-}
-
-.mini-option:hover {
-  background: var(--color-bg-hover);
-  border-color: var(--color-primary);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-.mini-option :deep(svg) {
-  font-size: var(--icon-size-lg);
-  color: var(--color-primary);
-  flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .mini-option :deep(svg) {
-    font-size: var(--icon-size-mobile-lg);
-  }
-}
-
-.mini-option span {
-  flex: 1;
 }
 </style>
 

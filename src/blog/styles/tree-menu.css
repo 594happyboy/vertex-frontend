@@ -1,0 +1,135 @@
+/* 树形菜单共享样式 */
+
+/* 操作按钮 */
+.tree-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+@media (max-width: 768px) {
+  .tree-action-btn {
+    width: var(--icon-size-mobile-xl);
+    height: var(--icon-size-mobile-xl);
+  }
+}
+
+.tree-action-btn :deep(svg) {
+  font-size: var(--icon-size-xs);
+}
+
+@media (max-width: 768px) {
+  .tree-action-btn :deep(svg) {
+    font-size: var(--icon-size-mobile-sm);
+  }
+}
+
+.tree-action-btn:hover {
+  transform: translateY(-1px);
+  color: var(--color-primary);
+  border-color: var(--color-border-hover);
+  background: var(--color-bg-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.tree-action-btn:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* 下拉菜单 */
+.tree-action-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  border-radius: var(--border-radius-lg);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xl);
+  backdrop-filter: blur(14px);
+  padding: var(--spacing-3xs) var(--spacing-xs);
+  z-index: var(--z-dropdown);
+}
+
+/* 菜单项 */
+.tree-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3xs);
+  width: 100%;
+  padding: var(--spacing-3xs) var(--spacing-xs);
+  border-radius: var(--border-radius-md);
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  min-height: 30px;
+}
+
+@media (max-width: 768px) {
+  .tree-menu-item {
+    gap: var(--spacing-mobile-xs);
+    padding: var(--spacing-mobile-2xs) var(--spacing-mobile-sm);
+    font-size: var(--font-size-mobile-sm);
+  }
+}
+
+.tree-menu-item :deep(svg) {
+  font-size: var(--icon-size-sm);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .tree-menu-item :deep(svg) {
+    font-size: var(--icon-size-mobile-sm);
+  }
+}
+
+.tree-menu-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.tree-menu-item.danger {
+  color: var(--color-danger);
+}
+
+.tree-menu-item.danger:hover {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+/* 菜单分隔线 */
+.tree-menu-divider {
+  height: 1px;
+  margin: var(--spacing-2xs) 0;
+  background: var(--color-border);
+}
+
+/* 菜单过渡动画 */
+.tree-menu-fade-scale-enter-active,
+.tree-menu-fade-scale-leave-active {
+  transition: var(--transition-fast);
+}
+
+.tree-menu-fade-scale-enter-from,
+.tree-menu-fade-scale-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+}
+

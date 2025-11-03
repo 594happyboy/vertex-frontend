@@ -47,12 +47,32 @@
 
       <div class="detail-section">
         <label class="detail-label">上传时间</label>
-        <div class="detail-value">{{ formatDateTime(file.uploadTime) }}</div>
+        <div class="detail-value">{{ formatDateTime(file.createdAt) }}</div>
+      </div>
+
+      <div class="detail-section">
+        <label class="detail-label">更新时间</label>
+        <div class="detail-value">{{ formatDateTime(file.updatedAt) }}</div>
       </div>
 
       <div class="detail-section">
         <label class="detail-label">下载次数</label>
-        <div class="detail-value">{{ file.downloadCount }} 次</div>
+        <div class="detail-value">{{ file.metadata?.downloadCount || 0 }} 次</div>
+      </div>
+
+      <div v-if="file.owner" class="detail-section">
+        <label class="detail-label">所有者</label>
+        <div class="detail-value">
+          <div class="owner-info">
+            <div v-if="file.owner.avatar" class="owner-avatar">
+              <img :src="file.owner.avatar" :alt="file.owner.name" />
+            </div>
+            <div v-else class="owner-avatar-placeholder">
+              <Icon icon="mdi:account" />
+            </div>
+            <span>{{ file.owner.name }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- 描述 -->
@@ -407,6 +427,39 @@ function handleDelete() {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
+}
+
+.owner-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.owner-avatar,
+.owner-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.owner-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.owner-avatar-placeholder {
+  background: rgba(96, 118, 255, 0.15);
+  color: rgba(96, 118, 255, 0.7);
+}
+
+.owner-avatar-placeholder :deep(svg) {
+  font-size: 18px;
 }
 
 .detail-actions {
