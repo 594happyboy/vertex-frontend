@@ -3,7 +3,13 @@
     <!-- 顶部主导航 -->
     <header class="main-header">
       <div class="header-primary">
-        <button class="btn-icon" @click="toggleSidebar" :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'">
+        <!-- 移动端且在知识库时才显示侧边栏切换按钮 -->
+        <button 
+          v-if="showMobileSidebarToggle"
+          class="btn-icon" 
+          @click="toggleSidebar" 
+          :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+        >
           <Icon :icon="sidebarCollapsed ? 'mdi:menu-open' : 'mdi:menu'" />
         </button>
         <div class="brand">
@@ -83,6 +89,9 @@
         <span v-if="item.badge" class="bottom-nav-badge">{{ item.badge }}</span>
       </button>
     </nav>
+
+    <!-- Loading 对话框 -->
+    <LoadingDialog />
   </div>
 </template>
 
@@ -93,6 +102,7 @@ import { Icon } from '@iconify/vue';
 import { useResponsive } from '@/composables';
 import { useAuthStore } from '../stores/auth';
 import { useUiStore } from '../stores/ui';
+import LoadingDialog from '../components/LoadingDialog.vue';
 
 const { isMobile } = useResponsive();
 const router = useRouter();
@@ -145,6 +155,13 @@ const currentUsername = computed(() => authStore.user?.username || '用户');
 const avatarInitial = computed(() => currentUsername.value.slice(0, 1).toUpperCase());
 const isDark = computed(() => uiStore.isDark);
 const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
+
+// 判断是否显示移动端侧边栏切换按钮：只在移动端且处于知识库页面时显示
+const showMobileSidebarToggle = computed(() => {
+  const currentPath = route.path;
+  const isKnowledgePage = currentPath === '/me' || currentPath.startsWith('/me/doc/');
+  return isMobile.value && isKnowledgePage;
+});
 
 // 判断导航项是否激活
 function isNavItemActive(item) {

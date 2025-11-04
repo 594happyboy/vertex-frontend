@@ -6,6 +6,10 @@ export const useUiStore = defineStore('ui', {
     toasts: [], // 通知消息列表
     dialogs: {}, // 对话框状态
     sidebarCollapsed: false, // 侧边栏是否折叠
+    loading: {
+      show: false,
+      message: '加载中...',
+    }, // loading 对话框状态
   }),
 
   getters: {
@@ -93,6 +97,17 @@ export const useUiStore = defineStore('ui', {
     // 设置侧边栏状态
     setSidebarCollapsed(collapsed) {
       this.sidebarCollapsed = collapsed;
+    },
+
+    // 显示 Loading 对话框
+    showLoading(message = '加载中...') {
+      this.loading.show = true;
+      this.loading.message = message;
+    },
+
+    // 隐藏 Loading 对话框
+    hideLoading() {
+      this.loading.show = false;
     },
   },
 });

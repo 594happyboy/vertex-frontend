@@ -16,6 +16,15 @@
         />
       </aside>
 
+      <!-- Web端侧边栏把手 -->
+      <button 
+        class="sidebar-handle"
+        @click="uiStore.toggleSidebar()"
+        :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+      >
+        <Icon :icon="sidebarCollapsed ? 'mdi:chevron-right' : 'mdi:chevron-left'" />
+      </button>
+
       <main class="knowledge-content">
         <div class="workspace-shell">
           <DocWorkspace />
@@ -27,6 +36,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue';
+import { Icon } from '@iconify/vue';
 import { useTreeStore } from '../stores/tree';
 import { useUiStore } from '../stores/ui';
 import DocTree from '../components/DocTree.vue';
@@ -102,6 +112,72 @@ function handleRefresh() {
   width: 0;
   opacity: 0;
   border-right-color: transparent;
+}
+
+/* Web端侧边栏把手 */
+.sidebar-handle {
+  position: absolute;
+  left: 280px; /* 紧贴侧边栏右边缘 */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-left: none; /* 左侧无边框，与侧边栏融为一体 */
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  z-index: 20;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--color-text-secondary);
+  opacity: 1;
+}
+
+/* 侧边栏展开时，把手样式 */
+.knowledge-sidebar:not(.collapsed) ~ .sidebar-handle {
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+/* 侧边栏收起时，把手样式 - 更明显 */
+.knowledge-layout:has(.knowledge-sidebar.collapsed) .sidebar-handle {
+  left: 0;
+  border-left: 1px solid var(--color-border);
+  border-radius: 0 8px 8px 0; /* 左侧直角，右侧圆角 */
+  background: #ffffff;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+  width: 24px;
+  height: 100px;
+}
+
+/* 悬停效果 - 简洁优雅 */
+.sidebar-handle:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transform: translateY(-50%);
+}
+
+.sidebar-handle :deep(svg) {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-handle:hover :deep(svg) {
+  transform: translateX(2px);
+}
+
+.sidebar-handle:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* 移动端隐藏把手 */
+@media (max-width: 768px) {
+  .sidebar-handle {
+    display: none;
+  }
 }
 
 /* 移动端抽屉式侧边栏 */

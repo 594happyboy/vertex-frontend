@@ -312,7 +312,7 @@ async function handleBatchFileSelect(event) {
 
   try {
     uploading.value = true;
-    uiStore.showInfo('正在上传压缩包，请稍候...');
+    uiStore.showLoading('正在批量导入文档，请稍候...');
 
     const result = await batchUploadDocuments(file, currentGroupId.value);
     await treeStore.fetchTree();
@@ -325,6 +325,7 @@ async function handleBatchFileSelect(event) {
     console.error('Batch upload error:', error);
     uiStore.showError(error.message || '批量导入失败');
   } finally {
+    uiStore.hideLoading();
     uploading.value = false;
     currentGroupId.value = null;
   }
@@ -337,7 +338,7 @@ async function handleBatchFileSelect(event) {
 .doc-tree {
   position: relative;
   height: 100%;
-  padding: var(--spacing-sm);
+  padding: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -345,7 +346,7 @@ async function handleBatchFileSelect(event) {
 
 @media (max-width: 768px) {
   .doc-tree {
-    padding: var(--spacing-mobile-sm);
+    padding: 6px;
   }
 }
 
@@ -370,8 +371,8 @@ async function handleBatchFileSelect(event) {
   gap: var(--spacing-xs);
   width: 100%;
   min-width: 0;
-  padding: 0 var(--spacing-sm);
-  height: 38px;
+  padding: 0 10px;
+  height: 34px;
   border-radius: var(--border-radius-xl);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
@@ -381,8 +382,8 @@ async function handleBatchFileSelect(event) {
 
 @media (max-width: 768px) {
   .search-box {
-    padding: 0 var(--spacing-mobile-sm);
-    height: 38px;
+    padding: 0 8px;
+    height: 32px;
   }
 }
 
@@ -476,7 +477,6 @@ async function handleBatchFileSelect(event) {
   border-radius: var(--border-radius-xl);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -485,7 +485,7 @@ async function handleBatchFileSelect(event) {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: 10px 12px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-primary);
   backdrop-filter: blur(6px);
@@ -495,7 +495,7 @@ async function handleBatchFileSelect(event) {
 
 @media (max-width: 768px) {
   .tree-actions {
-    padding: var(--spacing-mobile-sm) var(--spacing-mobile-md);
+    padding: 8px 10px;
     gap: var(--spacing-mobile-xs);
   }
 }
@@ -586,7 +586,7 @@ async function handleBatchFileSelect(event) {
 .tree-list {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-sm) var(--spacing-sm);
+  padding: 8px;
   min-height: 0;
   width: 100%;
   background: linear-gradient(180deg, rgba(148, 163, 184, 0.05) 0%, rgba(148, 163, 184, 0) 20%);
@@ -594,7 +594,7 @@ async function handleBatchFileSelect(event) {
 
 @media (max-width: 768px) {
   .tree-list {
-    padding: var(--spacing-mobile-sm) var(--spacing-mobile-sm);
+    padding: 6px;
   }
 }
 
@@ -602,7 +602,7 @@ async function handleBatchFileSelect(event) {
 .root-directory {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 4px;
 }
 
 .root-item {
@@ -610,9 +610,9 @@ async function handleBatchFileSelect(event) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-2xs) var(--spacing-xs);
-  margin-bottom: var(--spacing-2xs);
+  gap: var(--spacing-2xs);
+  padding: 2px 6px;
+  margin-bottom: 3px;
   border-radius: var(--border-radius-lg);
   cursor: pointer;
   transition: var(--transition-fast);
@@ -639,7 +639,7 @@ async function handleBatchFileSelect(event) {
 .root-leading {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-2xs);
   flex: 1;
   min-width: 0;
 }
@@ -648,9 +648,9 @@ async function handleBatchFileSelect(event) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--border-radius-lg);
+  width: 22px;
+  height: 22px;
+  border-radius: var(--border-radius-md);
   background: var(--color-primary-light);
   border: 1px solid var(--color-primary);
   color: var(--color-primary);
@@ -665,7 +665,7 @@ async function handleBatchFileSelect(event) {
 }
 
 .root-icon :deep(svg) {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .root-label {
@@ -695,25 +695,25 @@ async function handleBatchFileSelect(event) {
 .root-children {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2xs);
-  margin-left: var(--spacing-md);
-  padding-left: var(--spacing-sm);
+  gap: 2px;
+  margin-left: 12px;
+  padding-left: 8px;
   border-left: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 @media (max-width: 768px) {
   .root-item {
-    padding: var(--spacing-mobile-xs) var(--spacing-mobile-md);
-    margin-bottom: var(--spacing-mobile-xs);
+    padding: 2px 8px;
+    margin-bottom: 3px;
   }
 
   .root-icon {
-    width: var(--icon-size-mobile-xl);
-    height: var(--icon-size-mobile-xl);
+    width: 20px;
+    height: 20px;
   }
 
   .root-icon :deep(svg) {
-    font-size: var(--icon-size-mobile-md);
+    font-size: 12px;
   }
 
   .root-label {
@@ -721,8 +721,8 @@ async function handleBatchFileSelect(event) {
   }
 
   .root-children {
-    margin-left: var(--spacing-mobile-sm);
-    padding-left: var(--spacing-mobile-sm);
+    margin-left: 10px;
+    padding-left: 6px;
   }
 }
 

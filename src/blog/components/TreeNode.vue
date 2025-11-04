@@ -194,9 +194,9 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-3xs) var(--spacing-2xs);
-  margin-bottom: var(--spacing-3xs);
+  gap: var(--spacing-2xs);
+  padding: 1px 4px;
+  margin-bottom: 1px;
   border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: var(--transition-fast);
@@ -210,7 +210,7 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
 
 @media (max-width: 768px) {
   .node-item {
-    padding: var(--spacing-mobile-2xs) var(--spacing-mobile-sm);
+    padding: 2px 6px;
   }
 }
 
@@ -233,7 +233,7 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
 .node-leading {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-2xs);
   flex: 1;
   min-width: 0;
 }
@@ -242,8 +242,8 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   border-radius: var(--border-radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-bg-primary);
@@ -253,7 +253,7 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
 }
 
 .node-expand :deep(svg) {
-  font-size: var(--icon-size-xs);
+  font-size: 12px;
 }
 
 .node-expand:hover {
@@ -263,8 +263,8 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
 }
 
 .node-spacer {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 
@@ -272,9 +272,9 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--border-radius-lg);
+  width: 22px;
+  height: 22px;
+  border-radius: var(--border-radius-md);
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
   color: var(--color-text-secondary);
@@ -285,8 +285,8 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
 
 @media (max-width: 768px) {
   .node-avatar {
-    width: var(--icon-size-mobile-xl);
-    height: var(--icon-size-mobile-xl);
+    width: 20px;
+    height: 20px;
   }
 }
 
@@ -326,12 +326,12 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
 }
 
 .node-icon {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 @media (max-width: 768px) {
   .node-icon {
-    font-size: var(--icon-size-mobile-sm);
+    font-size: 12px;
   }
 }
 
@@ -367,12 +367,12 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
 }
 
 .node-children {
-  margin-left: var(--spacing-md);
-  padding-left: var(--spacing-sm);
+  margin-left: 12px;
+  padding-left: 8px;
   border-left: 1px solid rgba(148, 163, 184, 0.35);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2xs);
+  gap: 2px;
 }
 
 @media (max-width: 768px) {
@@ -381,8 +381,8 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
   }
 
   .node-children {
-    margin-left: var(--spacing-mobile-sm);
-    padding-left: var(--spacing-mobile-sm);
+    margin-left: 10px;
+    padding-left: 6px;
   }
 }
 </style>
