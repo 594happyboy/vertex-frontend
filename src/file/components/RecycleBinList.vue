@@ -77,31 +77,18 @@
       </div>
     </transition>
 
-    <!-- 分页 -->
-    <div v-if="totalPages > 1" class="pagination">
-      <button
-        class="page-btn"
-        :disabled="page === 1"
-        @click="$emit('page-change', page - 1)"
-      >
-        <Icon icon="mdi:chevron-left" />
-        上一页
+    <!-- 加载更多按钮（游标分页） -->
+    <div v-if="hasMore && !loading" class="load-more-container">
+      <button class="btn-load-more" @click="$emit('load-more')">
+        <Icon icon="mdi:refresh" />
+        <span>加载更多</span>
       </button>
+    </div>
 
-      <div class="page-indicator">
-        <span class="page-index">第 {{ page }}</span>
-        <span class="page-divider">/</span>
-        <span class="page-total">{{ totalPages }}</span>
-      </div>
-
-      <button
-        class="page-btn"
-        :disabled="page === totalPages"
-        @click="$emit('page-change', page + 1)"
-      >
-        下一页
-        <Icon icon="mdi:chevron-right" />
-      </button>
+    <!-- 无更多数据提示 -->
+    <div v-if="hasFiles && !hasMore && !loading" class="no-more-hint">
+      <Icon icon="mdi:check-circle-outline" />
+      <span>已加载全部内容</span>
     </div>
   </div>
 </template>
@@ -119,21 +106,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  total: {
-    type: Number,
-    default: 0,
-  },
-  page: {
-    type: Number,
-    default: 1,
-  },
-  totalPages: {
-    type: Number,
-    default: 1,
+  hasMore: {
+    type: Boolean,
+    default: false,
   },
 });
 
-const emit = defineEmits(['refresh', 'restore', 'remove', 'page-change']);
+const emit = defineEmits(['refresh', 'restore', 'remove', 'load-more']);
 
 const hasFiles = computed(() => props.items.length > 0);
 
@@ -449,52 +428,52 @@ function handlePermanentDelete(file) {
   box-shadow: 0 6px 16px -10px rgba(231, 76, 60, 0.4);
 }
 
-.pagination {
+/* 加载更多容器 */
+.load-more-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 20px;
-  padding: 20px 0;
+  padding: 24px 0;
   margin-top: auto;
 }
 
-.page-btn {
+.btn-load-more {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 12px 20px;
+  gap: 8px;
+  padding: 12px 24px;
   border-radius: 12px;
-  border: 1px solid rgba(96, 114, 255, 0.35);
-  background: linear-gradient(135deg, rgba(96, 118, 255, 0.15), rgba(33, 181, 255, 0.12));
-  color: #2d3264;
-  cursor: pointer;
-  transition: all 0.25s ease;
+  border: 1px solid rgba(96, 118, 255, 0.35);
+  background: linear-gradient(135deg, rgba(96, 118, 255, 0.12), rgba(33, 181, 255, 0.1));
+  color: rgba(96, 118, 255, 0.9);
   font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
 }
 
-.page-btn :deep(svg) {
+.btn-load-more:hover {
+  transform: translateY(-2px);
+  border-color: rgba(96, 118, 255, 0.5);
+  box-shadow: 0 8px 20px rgba(96, 118, 255, 0.2);
+}
+
+.btn-load-more :deep(svg) {
   font-size: 18px;
 }
 
-.page-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(68, 95, 247, 0.7);
-  box-shadow: 0 14px 28px -16px rgba(68, 95, 247, 0.66);
-}
-
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.page-indicator {
-  display: inline-flex;
+/* 无更多数据提示 */
+.no-more-hint {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1f2566;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 0;
+  color: rgba(96, 118, 255, 0.6);
+  font-size: 13px;
+}
+
+.no-more-hint :deep(svg) {
+  font-size: 18px;
 }
 
 @keyframes spin {

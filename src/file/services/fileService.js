@@ -388,18 +388,24 @@ export async function fetchRootFolderService(userId, limit = 50) {
 /**
  * 获取目录内容(游标分页)
  * @param {string|null} folderId
- * @param {Object} params - { userId, cursor, limit, keyword, orderBy, order, type }
+ * @param {Object} params - { userId, cursor, limit, keyword, orderBy, order }
+ * @returns {Promise<{folders: Array, files: Array, pagination: Object}>}
  */
 export async function fetchFolderChildrenService(folderId, params) {
   const res = await getFolderChildren(folderId, params);
-  // 根据OpenAPI规范，返回的是PaginatedResponseBaseResource
+  
+  // 新API规范：folders和files分别返回
   return {
-    items: (res.items || []).map(mapResource),
+    folders: (res.folders || []).map(mapResource),
+    files: (res.files || []).map(mapResource),
     pagination: {
       limit: res.pagination?.limit || params.limit || 50,
       nextCursor: res.pagination?.nextCursor || null,
       hasMore: res.pagination?.hasMore || false,
-      total: res.pagination?.total,
+      stats: res.pagination?.stats || {
+        totalFolders: res.folders?.length || 0,
+        totalFiles: res.files?.length || 0,
+      },
     },
   };
 }
@@ -423,17 +429,25 @@ export async function fetchFolderSubfoldersService(folderId, params) {
 
 /**
  * 在目录中搜索
+ * @param {string|null} folderId
+ * @param {Object} params - { userId, keyword, cursor, limit, orderBy, order }
+ * @returns {Promise<{folders: Array, files: Array, pagination: Object}>}
  */
 export async function searchInFolderService(folderId, params) {
   const res = await searchInFolder(folderId, params);
-  // 根据OpenAPI规范，返回的是PaginatedResponseBaseResource
+  
+  // 新API规范：folders和files分别返回
   return {
-    items: (res.items || []).map(mapResource),
+    folders: (res.folders || []).map(mapResource),
+    files: (res.files || []).map(mapResource),
     pagination: {
       limit: res.pagination?.limit || params.limit || 50,
       nextCursor: res.pagination?.nextCursor || null,
       hasMore: res.pagination?.hasMore || false,
-      total: res.pagination?.total,
+      stats: res.pagination?.stats || {
+        totalFolders: res.folders?.length || 0,
+        totalFiles: res.files?.length || 0,
+      },
     },
   };
 }

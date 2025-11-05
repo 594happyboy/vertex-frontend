@@ -101,8 +101,8 @@ function handleRefresh() {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid var(--color-border);
-  background: var(--color-bg-secondary);
+  background: #ffffff;
+  box-shadow: 4px 0 16px -2px rgba(0, 0, 0, 0.08), 6px 0 24px -2px rgba(0, 0, 0, 0.06);
   transition: var(--transition-slow);
   flex-shrink: 0;
   z-index: 10;
@@ -120,15 +120,18 @@ function handleRefresh() {
   left: 280px; /* 紧贴侧边栏右边缘 */
   top: 50%;
   transform: translateY(-50%);
-  width: 20px;
+  width: 24px;
   height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-left: none; /* 左侧无边框，与侧边栏融为一体 */
-  border-radius: 0 8px 8px 0;
+  border: none;
+  border-radius: 0 12px 12px 0;
+  box-shadow: 
+    inset 2px 0 4px -2px rgba(0, 0, 0, 0.03),
+    4px 0 16px -2px rgba(0, 0, 0, 0.08), 
+    6px 0 24px -2px rgba(0, 0, 0, 0.06);
   cursor: pointer;
   z-index: 20;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -138,26 +141,34 @@ function handleRefresh() {
 
 /* 侧边栏展开时，把手样式 */
 .knowledge-sidebar:not(.collapsed) ~ .sidebar-handle {
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    inset 2px 0 4px -2px rgba(0, 0, 0, 0.03),
+    4px 0 16px -2px rgba(0, 0, 0, 0.08), 
+    6px 0 24px -2px rgba(0, 0, 0, 0.06);
 }
 
 /* 侧边栏收起时，把手样式 - 更明显 */
 .knowledge-layout:has(.knowledge-sidebar.collapsed) .sidebar-handle {
   left: 0;
-  border-left: 1px solid var(--color-border);
-  border-radius: 0 8px 8px 0; /* 左侧直角，右侧圆角 */
+  border: none;
+  border-radius: 0 12px 12px 0; /* 左侧直角，右侧圆角 */
   background: #ffffff;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
-  width: 24px;
+  box-shadow: 
+    4px 0 20px -2px rgba(0, 0, 0, 0.12), 
+    6px 0 32px -2px rgba(0, 0, 0, 0.08);
+  width: 28px;
   height: 100px;
 }
 
 /* 悬停效果 - 简洁优雅 */
 .sidebar-handle:hover {
-  background: var(--color-bg-tertiary);
+  background: #f8f9fa;
   color: var(--color-text-primary);
-  transform: translateY(-50%);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 
+    inset 2px 0 4px -2px rgba(0, 0, 0, 0.03),
+    5px 0 20px -2px rgba(0, 0, 0, 0.12), 
+    8px 0 36px -2px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-handle :deep(svg) {
@@ -192,8 +203,8 @@ function handleRefresh() {
     z-index: 100;
     transform: translateX(-100%);
     opacity: 1;
-    border-right-color: var(--color-border);
-    box-shadow: var(--shadow-lg);
+    background: #ffffff;
+    box-shadow: 6px 0 24px -4px rgba(0, 0, 0, 0.15), 10px 0 48px -4px rgba(0, 0, 0, 0.1);
     transition: var(--transition-slow);
   }
 

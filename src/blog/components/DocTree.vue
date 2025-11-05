@@ -1,10 +1,8 @@
 <template>
   <div class="doc-tree">
-    <div class="tree-surface">
-      <div class="tree-body">
-        <div class="tree-list-wrapper">
-          <!-- 顶部操作区：搜索框 -->
-          <div class="tree-actions">
+    <div class="tree-list-wrapper">
+      <!-- 顶部操作区：搜索框 -->
+      <div class="tree-actions">
             <div class="search-box">
               <Icon icon="mdi:magnify" class="search-icon" />
               <input v-model="searchKeyword" type="text" placeholder="搜索文档或分组..." />
@@ -92,8 +90,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
     <!-- 隐藏的文件输入 -->
     <input ref="batchInputRef" type="file" accept=".zip" style="display: none" @change="handleBatchFileSelect" />
@@ -338,7 +334,6 @@ async function handleBatchFileSelect(event) {
 .doc-tree {
   position: relative;
   height: 100%;
-  padding: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -348,19 +343,6 @@ async function handleBatchFileSelect(event) {
   .doc-tree {
     padding: 6px;
   }
-}
-
-.tree-surface {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: transparent;
-  overflow: hidden;
-}
-
-.tree-surface::after {
-  display: none;
 }
 
 /* 搜索框样式 */
@@ -461,22 +443,13 @@ async function handleBatchFileSelect(event) {
 }
 
 /* 目录树容器 */
-.tree-body {
+.tree-list-wrapper {
   position: relative;
   z-index: 1;
   flex: 1;
-  overflow: hidden;
-  display: flex;
   min-height: 0;
-}
-
-.tree-list-wrapper {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  border-radius: var(--border-radius-xl);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
   overflow: hidden;
 }
 
@@ -484,11 +457,8 @@ async function handleBatchFileSelect(event) {
 .tree-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
   padding: 10px 12px;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-primary);
-  backdrop-filter: blur(6px);
   box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.05);
   flex-shrink: 0;
 }

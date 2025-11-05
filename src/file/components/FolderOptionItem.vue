@@ -34,7 +34,7 @@ defineProps({
     required: true,
   },
   selectedFolderId: {
-    type: Number,
+    type: [Number, String],
     default: null,
   },
   level: {

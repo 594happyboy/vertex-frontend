@@ -33,7 +33,7 @@ import { Icon } from '@iconify/vue';
 import { useResponsive } from '@/composables';
 import { useDocStore } from '../stores/doc';
 import MdContainer from './MdContainer.vue';
-import PdfViewer from './PdfViewer.vue';
+import PdfViewer from './pdf/PdfViewer.vue';
 
 const { isMobile } = useResponsive();
 const docStore = useDocStore();

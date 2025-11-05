@@ -26,6 +26,18 @@
       @batch-delete="handleBatchDelete"
     />
 
+    <!-- 统计信息 -->
+    <div v-if="stats.totalFolders > 0 || stats.totalFiles > 0" class="stats-bar">
+      <div class="stat-item" v-if="stats.totalFolders > 0">
+        <Icon icon="mdi:folder" class="stat-icon folder-icon" />
+        <span class="stat-label">{{ stats.totalFolders }} 个文件夹</span>
+      </div>
+      <div class="stat-item" v-if="stats.totalFiles > 0">
+        <Icon icon="mdi:file-document" class="stat-icon file-icon" />
+        <span class="stat-label">{{ stats.totalFiles }} 个文件</span>
+      </div>
+    </div>
+
     <!-- 内容区域 -->
     <div class="explorer-main">
       <ExplorerContent
@@ -78,7 +90,7 @@ import ExplorerContent from './ExplorerContent.vue';
 const props = defineProps({
   /** 当前文件夹ID */
   folderId: {
-    type: String,
+    type: [Number, String],
     default: null,
   },
 });
@@ -117,11 +129,15 @@ const items = computed(() => store.currentFolderItems || []);
 // 是否有更多数据
 const hasMore = computed(() => store.currentFolderHasMore);
 
+// 统计信息
+const stats = computed(() => store.currentFolderStats);
+
 // 剩余项目数
 const remainingCount = computed(() => {
   const cache = store.currentFolderCache;
-  if (cache && cache.total) {
-    return cache.total - cache.items.length;
+  if (cache && cache.stats) {
+    const total = cache.stats.totalFolders + cache.stats.totalFiles;
+    return total - cache.items.length;
   }
   return 0;
 });
@@ -425,6 +441,37 @@ onUnmounted(() => {
   opacity: 0.3;
 }
 
+/* 统计信息栏 */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: linear-gradient(135deg, rgba(96, 118, 255, 0.05), rgba(33, 181, 255, 0.03));
+  border-bottom: 1px solid rgba(200, 210, 255, 0.15);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 13px;
+  color: rgba(96, 118, 255, 0.85);
+  font-weight: 500;
+}
+
+.stat-icon {
+  font-size: 16px;
+}
+
+.folder-icon {
+  color: rgba(96, 118, 255, 0.8);
+}
+
+.file-icon {
+  color: rgba(33, 181, 255, 0.8);
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .explorer-main {
@@ -438,6 +485,19 @@ onUnmounted(() => {
   
   .empty-state {
     padding: var(--spacing-3xl) var(--spacing-lg);
+  }
+  
+  .stats-bar {
+    padding: var(--spacing-mobile-xs) var(--spacing-mobile-md);
+    gap: var(--spacing-md);
+  }
+  
+  .stat-item {
+    font-size: 12px;
+  }
+  
+  .stat-icon {
+    font-size: 14px;
   }
 }
 </style>

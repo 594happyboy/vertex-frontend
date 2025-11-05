@@ -174,6 +174,35 @@ export const useFileStore = defineStore('file', {
       const cache = state.foldersMap[key];
       return cache ? cache.hasMore : false;
     },
+    
+    /**
+     * 当前目录的统计信息
+     */
+    currentFolderStats: (state) => {
+      const key = state.currentFolderId || 'root';
+      const cache = state.foldersMap[key];
+      return cache?.stats || { totalFolders: 0, totalFiles: 0 };
+    },
+    
+    /**
+     * 当前目录中的文件夹列表
+     */
+    currentFolders: (state) => {
+      const key = state.currentFolderId || 'root';
+      const cache = state.foldersMap[key];
+      if (!cache) return [];
+      return cache.items.filter(item => item.type === 'folder');
+    },
+    
+    /**
+     * 当前目录中的文件列表
+     */
+    currentFiles: (state) => {
+      const key = state.currentFolderId || 'root';
+      const cache = state.foldersMap[key];
+      if (!cache) return [];
+      return cache.items.filter(item => item.type === 'file');
+    },
   },
 
   actions: {
@@ -205,6 +234,11 @@ export const useFileStore = defineStore('file', {
             sort: { field: 'name', order: 'asc' },
             keyword: '',
             loading: false,
+            loadingPromise: null,
+            stats: {
+              totalFolders: rootFolder.childFolderCount || 0,
+              totalFiles: rootFolder.childFileCount || 0,
+            },
             lastFetchedAt: Date.now(),
           };
           
@@ -239,11 +273,17 @@ export const useFileStore = defineStore('file', {
           sort: sort || { field: 'name', order: 'asc' },
           keyword: keyword,
           loading: false,
+          loadingPromise: null,
+          stats: { totalFolders: 0, totalFiles: 0 },
           lastFetchedAt: 0,
         };
       }
       
       const cache = this.foldersMap[key];
+
+      if (cache.loading && cache.loadingPromise) {
+        return await cache.loadingPromise;
+      }
       
       // 如果已有缓存且不强制刷新,直接返回
       if (!forceRefresh && cache.items.length > 0 && 
@@ -257,9 +297,11 @@ export const useFileStore = defineStore('file', {
       cache.cursor = null;
       cache.hasMore = true;
       cache.loading = true;
+      cache.loadingPromise = null;
       cache.keyword = keyword;
       if (sort) cache.sort = sort;
       
+      const loadingPromise = (async () => {
       try {
         const params = {
           userId: this.userId,
@@ -271,27 +313,42 @@ export const useFileStore = defineStore('file', {
         
         const result = await fetchFolderChildrenService(folderId, params);
         
-        // 根据OpenAPI规范，result包含items和pagination
-        cache.items = result.items;
-        cache.cursor = result.pagination?.nextCursor;
-        cache.hasMore = result.pagination?.hasMore || false;
-        cache.total = result.pagination?.total;
+        // 新API规范：folders和files分别返回，文件夹始终在前
+        const folders = result.folders || [];
+        const files = result.files || [];
+        cache.items = [...folders, ...files];
+        
+        const nextCursor = result.pagination?.nextCursor || null;
+        const hasNext = Boolean(result.pagination?.hasMore && nextCursor);
+        cache.cursor = hasNext ? nextCursor : null;
+        cache.hasMore = hasNext;
+        
+        // 保存统计信息
+        cache.stats = result.pagination?.stats || {
+          totalFolders: folders.length,
+          totalFiles: files.length,
+        };
         cache.lastFetchedAt = Date.now();
         
         // 同步到旧版files (兼容)
         if (key === (this.currentFolderId || 'root')) {
-          this.files = result.items.filter(item => item.type === 'file');
-          this.total = result.pagination?.total;
+          this.files = files;
+          this.total = cache.stats.totalFiles;
         }
         
-        return result.items;
+        return cache.items;
       } catch (error) {
         console.error('获取目录内容失败:', error);
         cache.hasMore = false;
         throw error;
       } finally {
         cache.loading = false;
+          cache.loadingPromise = null;
       }
+      })();
+
+      cache.loadingPromise = loadingPromise;
+      return await loadingPromise;
     },
     
     /**
@@ -302,7 +359,13 @@ export const useFileStore = defineStore('file', {
       const key = folderId || 'root';
       const cache = this.foldersMap[key];
       
-      if (!cache || !cache.hasMore || cache.loading) {
+      if (!cache || cache.loading) {
+        return;
+      }
+
+      if (!cache.hasMore || !cache.cursor) {
+        cache.hasMore = false;
+        cache.cursor = null;
         return;
       }
       
@@ -311,19 +374,35 @@ export const useFileStore = defineStore('file', {
       try {
         const params = {
           userId: this.userId,
-          cursor: cache.cursor,
           limit: 50,
           keyword: cache.keyword,
           orderBy: cache.sort.field,
           order: cache.sort.order,
         };
+
+        if (cache.cursor) {
+          params.cursor = cache.cursor;
+        }
         
         const result = await fetchFolderChildrenService(folderId, params);
         
-        // 根据OpenAPI规范，result包含items和pagination
-        cache.items.push(...result.items);
-        cache.cursor = result.pagination?.nextCursor;
-        cache.hasMore = result.pagination?.hasMore || false;
+        // 新API规范：folders和files分别返回，文件夹始终在前
+        const folders = result.folders || [];
+        const files = result.files || [];
+        cache.items.push(...folders, ...files);
+        
+        const nextCursor = result.pagination?.nextCursor || null;
+        const hasNext = Boolean(result.pagination?.hasMore && nextCursor);
+        cache.cursor = hasNext ? nextCursor : null;
+        cache.hasMore = hasNext;
+        
+        // 更新统计信息（保持累计值不变，只有首次加载时设置）
+        if (!cache.stats) {
+          cache.stats = result.pagination?.stats || {
+            totalFolders: folders.length,
+            totalFiles: files.length,
+          };
+        }
         cache.lastFetchedAt = Date.now();
         
         // 同步到旧版files (兼容)
@@ -366,14 +445,23 @@ export const useFileStore = defineStore('file', {
         
         const result = await searchInFolderService(folderId, params);
         
-        // 根据OpenAPI规范，result包含items和pagination
+        // 新API规范：folders和files分别返回，文件夹始终在前
+        const folders = result.folders || [];
+        const files = result.files || [];
+        const items = [...folders, ...files];
+        
         // 更新缓存
+        const nextCursor = result.pagination?.nextCursor || null;
+        const hasNext = Boolean(result.pagination?.hasMore && nextCursor);
         this.foldersMap[key] = {
           ...cache,
-          items: result.items,
-          cursor: result.pagination?.nextCursor,
-          hasMore: result.pagination?.hasMore || false,
-          total: result.pagination?.total,
+          items: items,
+          cursor: hasNext ? nextCursor : null,
+          hasMore: hasNext,
+          stats: result.pagination?.stats || {
+            totalFolders: folders.length,
+            totalFiles: files.length,
+          },
           keyword: keyword.trim(),
           loading: false,
           lastFetchedAt: Date.now(),
@@ -381,10 +469,10 @@ export const useFileStore = defineStore('file', {
         
         // 同步到旧版files (兼容)
         if (key === (this.currentFolderId || 'root')) {
-          this.files = result.items.filter(item => item.type === 'file');
+          this.files = files;
         }
         
-        return result.items;
+        return items;
       } catch (error) {
         console.error('搜索失败:', error);
         cache.loading = false;
@@ -876,8 +964,10 @@ export const useFileStore = defineStore('file', {
           this.recycleFiles.push(...res.items);
         }
         
-        this.recycleBinCursor = res.pagination.nextCursor;
-        this.recycleBinHasMore = res.pagination.hasMore;
+        const nextCursor = res.pagination?.nextCursor || null;
+        const hasNext = Boolean(res.pagination?.hasMore && nextCursor);
+        this.recycleBinCursor = hasNext ? nextCursor : null;
+        this.recycleBinHasMore = hasNext;
       } catch (error) {
         console.error('获取回收站列表失败:', error);
         throw error;

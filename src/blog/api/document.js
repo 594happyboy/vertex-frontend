@@ -1,9 +1,9 @@
 import request from '@/api/request';
 
 /**
- * 查询文档列表
- * @param {Object} params - { q?, status?, groupId?, page?, size? }
- * @returns {Promise<{ items: Array, total: number }>}
+ * 查询文档列表（游标分页）
+ * @param {Object} params - { q?, groupId?, cursor?, limit?, sortBy?, order? }
+ * @returns {Promise<PaginatedResponse<DocumentItem>>}
  */
 export function getDocuments(params = {}) {
   return request.get('/api/documents', { params });

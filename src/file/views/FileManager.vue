@@ -26,14 +26,12 @@
           v-else
           key="recycle"
           :items="store.recycleFiles"
-          :loading="store.recycleLoading"
-          :total="store.recycleTotal"
-          :page="store.recyclePage"
-          :total-pages="store.recycleTotalPages"
+          :loading="store.recycleBinLoading"
+          :has-more="store.recycleBinHasMore"
           @refresh="handleRefreshRecycle"
           @restore="handleRestore"
           @remove="handlePermanentDelete"
-          @page-change="handleRecyclePageChange"
+          @load-more="handleLoadMoreRecycle"
         />
       </transition>
     </main>
@@ -269,10 +267,18 @@ function toggleView() {
 
 async function handleRefreshRecycle() {
   try {
-    await store.fetchRecycleFiles();
+    await store.fetchRecycleBinFiles(true); // 参数 true 表示重置
     uiStore.toast('已刷新');
   } catch (error) {
     uiStore.toast('刷新失败：' + (error.message || '未知错误'));
+  }
+}
+
+async function handleLoadMoreRecycle() {
+  try {
+    await store.loadMoreRecycleBinFiles();
+  } catch (error) {
+    uiStore.toast('加载失败：' + (error.message || '未知错误'));
   }
 }
 
@@ -296,9 +302,11 @@ async function handlePermanentDelete(fileId) {
   }
 }
 
-async function handleRecyclePageChange(page) {
+// 旧的页码分页函数已移除
+async function handleRecyclePageChange_DEPRECATED(page) {
+  // 已弃用，改用游标分页
   try {
-    await store.goToRecyclePage(page);
+    await store.goToRecyclePage_DEPRECATED(page);
   } catch (error) {
     uiStore.toast('加载失败：' + (error.message || '未知错误'));
   }
