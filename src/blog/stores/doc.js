@@ -26,9 +26,9 @@ export const useDocStore = defineStore('doc', {
 
   getters: {
     isEditing: (state) => state.mode === 'edit',
-    canEdit: (state) => state.currentDoc && ['md', 'txt'].includes(state.currentDoc.type),
+    canEdit: (state) => state.currentDoc && ['md', 'txt', 'html'].includes(state.currentDoc.type),
     docTitle: (state) => state.currentDoc?.title || '未命名文档',
-    isTextDoc: (state) => state.currentDoc && ['md', 'txt'].includes(state.currentDoc.type),
+    isTextDoc: (state) => state.currentDoc && ['md', 'txt', 'html'].includes(state.currentDoc.type),
   },
 
   actions: {
@@ -69,7 +69,7 @@ export const useDocStore = defineStore('doc', {
         this.currentDoc._originalTitle = data.title;
         
         // 如果是文本文档，从filePath加载内容
-        this.content = (['md', 'txt'].includes(data.type) && data.filePath) 
+        this.content = (['md', 'txt', 'html'].includes(data.type) && data.filePath) 
           ? await this.loadDocumentContent(data.filePath)
           : '';
         
@@ -102,7 +102,7 @@ export const useDocStore = defineStore('doc', {
         // 保存原始标题用于比较
         this.currentDoc._originalTitle = data.title;
         
-        const isTextDoc = ['md', 'txt'].includes(data.type);
+        const isTextDoc = ['md', 'txt', 'html'].includes(data.type);
         this.content = (isTextDoc && data.filePath) 
           ? await this.loadDocumentContent(data.filePath)
           : '';

@@ -18,6 +18,13 @@ export const FILE_TYPE_CONFIG = {
     icon: 'mdi:file-document',
     color: 'info',
   },
+  html: {
+    ext: '.html',
+    mime: 'text/html',
+    defaultContent: '',
+    icon: 'mdi:file-code',
+    color: 'warning',
+  },
   pdf: {
     ext: '.pdf',
     mime: 'application/pdf',
@@ -49,10 +56,11 @@ export const IMAGE_ACCEPT = '.jpg,.jpeg,.png,.gif,.webp,.svg';
 export const DOCUMENT_TYPES = {
   MD: 'md',
   TXT: 'txt',
+  HTML: 'html',
   PDF: 'pdf',
 };
 
-export const DOCUMENT_ACCEPT = '.md,.pdf,.txt';
+export const DOCUMENT_ACCEPT = '.md,.pdf,.txt,.html';
 
 // ==================== 文件图标映射 ====================
 export const FILE_ICON_MAP = {
@@ -63,6 +71,7 @@ export const FILE_ICON_MAP = {
   ppt: '📙', pptx: '📙',
   txt: '📄',
   md: '📝',
+  html: '📰',
   // 压缩包
   zip: '📦', rar: '📦', '7z': '📦', tar: '📦', gz: '📦',
   // 音频

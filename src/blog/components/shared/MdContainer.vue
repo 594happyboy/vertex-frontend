@@ -1,7 +1,7 @@
 <template>
   <div class="md-container">
-    <!-- Markdown 工具栏 -->
-    <MdToolbar @toggleMode="toggleMode" @save="handleSave" />
+    <!-- Markdown 工具栏（可选） -->
+    <MdToolbar v-if="!hideToolbar" @toggleMode="toggleMode" />
 
     <!-- Markdown 内容区 -->
     <div class="md-content">
@@ -13,14 +13,19 @@
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount, onUnmounted } from 'vue';
-import { useDocStore } from '../stores/doc';
-import { useUiStore } from '../stores/ui';
-import MdToolbar from './markdown/MdToolbar.vue';
+import { useDocStore } from '../../stores/doc';
+import MdToolbar from '../markdown/MdToolbar.vue';
 import MdViewer from './MdViewer.vue';
 import MdEditor from './MdEditor.vue';
 
+const props = defineProps({
+  hideToolbar: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 const docStore = useDocStore();
-const uiStore = useUiStore();
 
 // 计算属性
 const isEditing = computed(() => docStore.isEditing);
@@ -34,27 +39,7 @@ function toggleMode() {
   docStore.setMode(isEditing.value ? 'view' : 'edit');
 }
 
-/**
- * 手动保存（立即保存按钮）
- */
-async function handleSave() {
-  try {
-    await docStore.performAutoSave();
-    uiStore.showSuccess('保存成功');
-  } catch (error) {
-    uiStore.showError(error.message || '保存失败');
-  }
-}
-
-/**
- * 快捷键处理 (Ctrl/Cmd + S)
- */
-const handleKeyDown = (event) => {
-  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-    event.preventDefault();
-    isEditing.value && handleSave();
-  }
-};
+// 已移除手动保存功能，只保留自动保存
 
 /**
  * 页面关闭前警告
@@ -69,7 +54,6 @@ const handleBeforeUnload = (e) => {
 
 // 生命周期钩子
 onMounted(() => {
-  document.addEventListener('keydown', handleKeyDown);
   window.addEventListener('beforeunload', handleBeforeUnload);
 });
 
@@ -81,7 +65,6 @@ onBeforeUnmount(() => {
 });
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeyDown);
   window.removeEventListener('beforeunload', handleBeforeUnload);
 });
 </script>

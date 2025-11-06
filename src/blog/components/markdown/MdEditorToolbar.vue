@@ -71,10 +71,6 @@
         <Icon icon="mdi:selection" />
         <span class="stat-value">{{ selectionLength }}</span>
       </span>
-      <span class="stat-item" title="行数">
-        <Icon icon="mdi:format-line-spacing" />
-        <span class="stat-value">{{ lineCount }}</span>
-      </span>
     </div>
     
     <!-- 图片文件选择器 -->
@@ -187,12 +183,6 @@ const toolbarButtons = [
 
 // 字数统计
 const wordCount = computed(() => countWords(props.content));
-
-const lineCount = computed(() => {
-  if (!props.content) return 0;
-  return props.content.split('\n').length;
-});
-
 
 // ==================== 格式化工具函数 ====================
 
@@ -717,13 +707,6 @@ const debouncedCalculate = debounce(calculateButtonVisibility, 100);
 .stat-item :deep(svg) {
   font-size: 14px;
   opacity: 0.6;
-}
-
-.stat-value {
-  font-weight: 500;
-  color: var(--color-text-primary);
-  min-width: 20px;
-  text-align: right;
 }
 
 .spin {

@@ -56,16 +56,16 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { Icon } from '@iconify/vue';
 import { useResponsive } from '@/composables';
-import { useDocStore } from '../stores/doc';
-import { useMarkdownRenderer } from '../composables/markdown';
-import MdEditorToolbar from './markdown/MdEditorToolbar.vue';
-import { KEYBOARD_SHORTCUTS } from '../constants';
+import { useDocStore } from '../../stores/doc';
+import { useMarkdownRenderer } from '../../composables/markdown';
+import MdEditorToolbar from '../markdown/MdEditorToolbar.vue';
+import { KEYBOARD_SHORTCUTS } from '../../constants';
 import { 
   countSelectedWords,
   ensureNewlines,
   isLineStart,
   getLineStart
-} from '../utils/markdownHelpers';
+} from '../../utils/markdownHelpers';
 
 const { isMobile } = useResponsive();
 const docStore = useDocStore();

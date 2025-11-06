@@ -1,17 +1,8 @@
 <template>
   <div class="main-layout">
     <!-- 顶部主导航 -->
-    <header class="main-header">
+    <header v-if="showHeader" class="main-header">
       <div class="header-primary">
-        <!-- 移动端且在知识库时才显示侧边栏切换按钮 -->
-        <button 
-          v-if="showMobileSidebarToggle"
-          class="btn-icon" 
-          @click="toggleSidebar" 
-          :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
-        >
-          <Icon :icon="sidebarCollapsed ? 'mdi:menu-open' : 'mdi:menu'" />
-        </button>
         <div class="brand">
           <Icon icon="mdi:star-circle-outline" class="brand__icon" />
           <div class="brand__text">
@@ -76,7 +67,7 @@
     </main>
 
     <!-- 移动端底部导航栏 -->
-    <nav class="bottom-nav">
+    <nav v-if="showBottomNav" class="bottom-nav">
       <button
         v-for="item in navItems"
         :key="item.path"
@@ -154,13 +145,20 @@ const navItems = ref([
 const currentUsername = computed(() => authStore.user?.username || '用户');
 const avatarInitial = computed(() => currentUsername.value.slice(0, 1).toUpperCase());
 const isDark = computed(() => uiStore.isDark);
-const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
 
-// 判断是否显示移动端侧边栏切换按钮：只在移动端且处于知识库页面时显示
-const showMobileSidebarToggle = computed(() => {
-  const currentPath = route.path;
-  const isKnowledgePage = currentPath === '/me' || currentPath.startsWith('/me/doc/');
-  return isMobile.value && isKnowledgePage;
+// 控制导航显示/隐藏
+const showHeader = computed(() => {
+  // 桌面端始终显示
+  if (!isMobile.value) return true;
+  // 移动端根据状态
+  return uiStore.navigationVisible;
+});
+
+const showBottomNav = computed(() => {
+  // 桌面端不显示底部导航
+  if (!isMobile.value) return false;
+  // 移动端根据状态
+  return uiStore.navigationVisible;
 });
 
 // 判断导航项是否激活
@@ -180,10 +178,6 @@ function navigateTo(path) {
 
 function toggleTheme() {
   uiStore.toggleTheme();
-}
-
-function toggleSidebar() {
-  uiStore.toggleSidebar();
 }
 
 function toggleUserMenu() {

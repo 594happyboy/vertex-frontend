@@ -48,6 +48,13 @@ const routes = [
       // },
     ],
   },
+  // 富文本编辑器测试页（独立页面，可滚动）
+  {
+    path: '/editor-test',
+    name: 'EditorTest',
+    component: () => import('../views/EditorTestView.vue'),
+    meta: { requiresAuth: true },
+  },
   // 可选：公开阅读页
   {
     path: '/public/:username?',

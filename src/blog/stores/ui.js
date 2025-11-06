@@ -10,6 +10,7 @@ export const useUiStore = defineStore('ui', {
       show: false,
       message: '加载中...',
     }, // loading 对话框状态
+    navigationVisible: true, // 导航栏是否可见（移动端）
   }),
 
   getters: {
@@ -108,6 +109,21 @@ export const useUiStore = defineStore('ui', {
     // 隐藏 Loading 对话框
     hideLoading() {
       this.loading.show = false;
+    },
+
+    // 设置导航栏可见性
+    setNavigationVisible(visible) {
+      this.navigationVisible = visible;
+    },
+
+    // 显示导航栏
+    showNavigation() {
+      this.navigationVisible = true;
+    },
+
+    // 隐藏导航栏
+    hideNavigation() {
+      this.navigationVisible = false;
     },
   },
 });

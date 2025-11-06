@@ -1,47 +1,28 @@
 <template>
-  <div class="md-toolbar">
+  <div class="html-toolbar">
     <div class="toolbar-left">
       <span class="toolbar-icon">
-        <Icon icon="mdi:notebook-edit-outline" />
+        <Icon icon="mdi:file-document-edit" />
       </span>
       
-      <!-- 标题编辑器子组件 -->
-      <MdTitleEditor />
-      
-      <span v-if="canEdit" class="doc-badge">可编辑</span>
+      <!-- 标题编辑器 -->
+      <HtmlTitleEditor />
     </div>
 
     <div class="toolbar-right">
-      <button
-        v-if="canEdit"
-        class="btn-action"
-        @click="$emit('toggleMode')"
-      >
-        <Icon :icon="isEditing ? 'mdi:eye' : 'mdi:pencil'" />
-        <span>{{ isEditing ? '预览模式' : '编辑模式' }}</span>
-      </button>
       <!-- 已移除立即保存按钮，只保留自动保存功能 -->
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import { Icon } from '@iconify/vue';
-import { useDocStore } from '../../stores/doc';
-import MdTitleEditor from './MdTitleEditor.vue';
-
-defineEmits(['toggleMode']);
-
-const docStore = useDocStore();
-
-const canEdit = computed(() => docStore.canEdit);
-const isEditing = computed(() => docStore.isEditing);
+import HtmlTitleEditor from './HtmlTitleEditor.vue';
 </script>
 
 <style scoped>
 /* 工具栏样式 */
-.md-toolbar {
+.html-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -55,7 +36,7 @@ const isEditing = computed(() => docStore.isEditing);
 }
 
 @media (max-width: 768px) {
-  .md-toolbar {
+  .html-toolbar {
     padding: var(--spacing-mobile-xs) var(--spacing-mobile-sm);
     gap: var(--spacing-mobile-xs);
   }
@@ -105,26 +86,6 @@ const isEditing = computed(() => docStore.isEditing);
   }
 }
 
-.doc-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-2xs) var(--spacing-sm);
-  border-radius: var(--border-radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .doc-badge {
-    display: none;
-  }
-}
-
 .toolbar-right {
   display: flex;
   align-items: center;
@@ -138,61 +99,73 @@ const isEditing = computed(() => docStore.isEditing);
   }
 }
 
+/* 按钮样式 */
 .btn-action {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: var(--btn-padding-sm);
-  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-xs) var(--spacing-md);
   border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-xl);
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition-base);
+  transition: var(--transition-fast);
   min-height: var(--touch-target-min);
-}
-
-.btn-action :deep(svg) {
-  font-size: var(--icon-size-md);
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
   .btn-action {
-    padding: var(--spacing-mobile-xs) var(--spacing-mobile-sm);
-    gap: 0;
+    padding: var(--spacing-mobile-2xs) var(--spacing-mobile-xs);
+    gap: var(--spacing-mobile-2xs);
+    font-size: var(--font-size-mobile-sm);
   }
-
+  
   .btn-action span {
     display: none;
-  }
-
-  .btn-action :deep(svg) {
-    font-size: var(--icon-size-mobile-lg);
   }
 }
 
 .btn-action:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
-  border-color: var(--color-border-hover);
+}
+
+.btn-action:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-action:disabled {
-  cursor: not-allowed;
   opacity: 0.5;
-  box-shadow: none;
+  cursor: not-allowed;
 }
 
 .btn-action--primary {
-  background: var(--gradient-primary);
+  background: var(--color-primary);
+  color: var(--color-text-primary-inverse);
   border-color: var(--color-primary);
-  color: var(--color-text-inverse);
 }
 
 .btn-action--primary:hover:not(:disabled) {
-  box-shadow: var(--shadow-primary);
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.btn-action :deep(svg) {
+  font-size: var(--icon-size-md);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .btn-action :deep(svg) {
+    font-size: var(--icon-size-mobile-md);
+  }
 }
 </style>
 

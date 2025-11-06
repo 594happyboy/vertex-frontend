@@ -13,8 +13,8 @@
 <script setup>
 import { computed, onMounted, onUnmounted, watch, ref } from 'vue';
 import { useResponsive } from '@/composables';
-import { useDocStore } from '../stores/doc';
-import { useMarkdownRenderer } from '../composables/markdown';
+import { useDocStore } from '../../stores/doc';
+import { useMarkdownRenderer } from '../../composables/markdown';
 
 const { isMobile } = useResponsive();
 const docStore = useDocStore();

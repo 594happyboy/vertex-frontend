@@ -1,5 +1,5 @@
 <template>
-  <div class="doc-workspace">
+  <div class="desktop-doc-workspace">
     <div v-if="!currentDoc" class="empty-state">
       <div class="empty-state__decor"></div>
       <div class="empty-state__icon">
@@ -11,10 +11,13 @@
 
     <div v-else class="workspace-content">
       <div class="viewer-surface">
-        <!-- Markdown 文档（包含工具栏） -->
+        <!-- Markdown 文档 -->
         <MdContainer v-if="currentDoc.type === 'md' || currentDoc.type === 'txt'" />
         
-        <!-- PDF 文档（包含工具栏） -->
+        <!-- 富文本文档 -->
+        <HtmlContainer v-else-if="currentDoc.type === 'html'" />
+        
+        <!-- PDF 文档 -->
         <PdfViewer v-else-if="currentDoc.type === 'pdf'" />
         
         <!-- 不支持的文档类型 -->
@@ -30,19 +33,18 @@
 <script setup>
 import { computed } from 'vue';
 import { Icon } from '@iconify/vue';
-import { useResponsive } from '@/composables';
-import { useDocStore } from '../stores/doc';
-import MdContainer from './MdContainer.vue';
-import PdfViewer from './pdf/PdfViewer.vue';
+import { useDocStore } from '../../stores/doc';
+import MdContainer from '../shared/MdContainer.vue';
+import HtmlContainer from '../shared/HtmlContainer.vue';
+import PdfViewer from '../pdf/PdfViewer.vue';
 
-const { isMobile } = useResponsive();
 const docStore = useDocStore();
 
 const currentDoc = computed(() => docStore.currentDoc);
 </script>
 
 <style scoped>
-.doc-workspace {
+.desktop-doc-workspace {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -69,14 +71,6 @@ const currentDoc = computed(() => docStore.currentDoc);
   overflow: hidden;
 }
 
-@media (max-width: 768px) {
-  .empty-state {
-    gap: var(--spacing-mobile-md);
-    padding: var(--spacing-mobile-xl) var(--spacing-mobile-lg);
-    margin: var(--spacing-mobile-md);
-  }
-}
-
 .empty-state__decor {
   position: absolute;
   inset: 0;
@@ -99,21 +93,8 @@ const currentDoc = computed(() => docStore.currentDoc);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
 
-@media (max-width: 768px) {
-  .empty-state__icon {
-    width: 64px;
-    height: 64px;
-  }
-}
-
 .empty-state__icon :deep(svg) {
   font-size: var(--icon-size-3xl);
-}
-
-@media (max-width: 768px) {
-  .empty-state__icon :deep(svg) {
-    font-size: var(--icon-size-2xl);
-  }
 }
 
 .empty-state h3 {
@@ -124,74 +105,11 @@ const currentDoc = computed(() => docStore.currentDoc);
   color: var(--color-text-primary);
 }
 
-@media (max-width: 768px) {
-  .empty-state h3 {
-    font-size: var(--font-size-mobile-lg);
-  }
-}
-
 .empty-state p {
   position: relative;
   margin: 0;
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
-}
-
-@media (max-width: 768px) {
-  .empty-state p {
-    font-size: var(--font-size-mobile-base);
-  }
-}
-
-.empty-actions {
-  position: relative;
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-@media (max-width: 768px) {
-  .empty-actions {
-    gap: var(--spacing-mobile-xs);
-  }
-}
-
-.btn-empty {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--border-radius-2xl);
-  border: 1px solid var(--color-primary);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-base);
-  min-height: var(--touch-target-min);
-}
-
-@media (max-width: 768px) {
-  .btn-empty {
-    gap: var(--spacing-mobile-xs);
-    padding: var(--spacing-mobile-sm) var(--spacing-mobile-md);
-    font-size: var(--font-size-mobile-base);
-  }
-}
-
-.btn-empty:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn-empty :deep(svg) {
-  font-size: var(--icon-size-lg);
-}
-
-@media (max-width: 768px) {
-  .btn-empty :deep(svg) {
-    font-size: var(--icon-size-mobile-lg);
-  }
 }
 
 .workspace-content {
@@ -226,23 +144,9 @@ const currentDoc = computed(() => docStore.currentDoc);
   font-size: var(--font-size-base);
 }
 
-@media (max-width: 768px) {
-  .viewer-placeholder {
-    gap: var(--spacing-mobile-sm);
-    font-size: var(--font-size-mobile-base);
-  }
-}
-
 .viewer-placeholder :deep(svg) {
   font-size: var(--icon-size-4xl);
   color: var(--color-text-tertiary);
 }
-
-@media (max-width: 768px) {
-  .viewer-placeholder :deep(svg) {
-    font-size: var(--icon-size-3xl);
-  }
-}
 </style>
-
 

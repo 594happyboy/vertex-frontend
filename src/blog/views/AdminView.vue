@@ -1,258 +1,75 @@
 <template>
-  <div class="knowledge-view">
-    <div class="knowledge-layout">
-      <!-- 移动端遮罩层 -->
-      <div 
-        v-if="!sidebarCollapsed" 
-        class="sidebar-overlay" 
-        @click="uiStore.toggleSidebar()"
-      ></div>
-
-      <aside class="knowledge-sidebar" :class="{ collapsed: sidebarCollapsed }">
-        <!-- 文档树 -->
-        <DocTree
-          ref="docTreeRef"
-          @refresh="handleRefresh"
-        />
-      </aside>
-
-      <!-- Web端侧边栏把手 -->
-      <button 
-        class="sidebar-handle"
-        @click="uiStore.toggleSidebar()"
-        :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
-      >
-        <Icon :icon="sidebarCollapsed ? 'mdi:chevron-right' : 'mdi:chevron-left'" />
-      </button>
-
-      <main class="knowledge-content">
-        <div class="workspace-shell">
-          <DocWorkspace />
-        </div>
-      </main>
-    </div>
-  </div>
+  <component :is="viewComponent" v-bind="componentProps" />
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue';
-import { Icon } from '@iconify/vue';
-import { useTreeStore } from '../stores/tree';
+import { computed, defineAsyncComponent, watch, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useResponsive } from '@/composables';
 import { useUiStore } from '../stores/ui';
-import DocTree from '../components/DocTree.vue';
-import DocWorkspace from '../components/DocWorkspace.vue';
 
-const treeStore = useTreeStore();
+const route = useRoute();
+const { isMobile } = useResponsive();
 const uiStore = useUiStore();
 
-const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
+// 懒加载组件
+const DesktopKnowledge = defineAsyncComponent(() => 
+  import('./desktop/DesktopKnowledgeView.vue')
+);
+const MobileKnowledgeList = defineAsyncComponent(() => 
+  import('./mobile/MobileKnowledgeListView.vue')
+);
+const MobileDocEditor = defineAsyncComponent(() => 
+  import('./mobile/MobileDocEditorView.vue')
+);
 
-// 处理窗口大小变化
-function handleResize() {
-  uiStore.initSidebar();
-}
+const viewComponent = computed(() => {
+  // 桌面端始终显示桌面视图
+  if (!isMobile.value) {
+    return DesktopKnowledge;
+  }
+  
+  // 移动端：根据路由判断
+  // /me -> 列表页
+  // /me/doc/:id -> 编辑页
+  return route.params.id ? MobileDocEditor : MobileKnowledgeList;
+});
 
-onMounted(async () => {
-  // 初始化侧边栏状态（移动端默认关闭）
-  uiStore.initSidebar();
-  
-  // 监听窗口大小变化
-  window.addEventListener('resize', handleResize);
-  
-  try {
-    await treeStore.fetchTree();
-  } catch (error) {
-    // 401错误在request拦截器中已处理（自动跳转登录），无需再提示
-    if (error.code !== 401) {
-      uiStore.showError(error.message || '加载数据失败');
+const componentProps = computed(() => {
+  if (route.params.id) {
+    return { docId: route.params.id };
+  }
+  return {};
+});
+
+// 监听路由变化，控制移动端导航可见性
+watch(
+  () => ({ path: route.path, isMobile: isMobile.value }),
+  ({ path, isMobile }) => {
+    if (!isMobile) {
+      uiStore.showNavigation();
+      return;
     }
+    
+    // 移动端编辑页隐藏导航
+    const isEditorPage = path.includes('/doc/');
+    if (isEditorPage) {
+      uiStore.hideNavigation();
+    } else {
+      uiStore.showNavigation();
+    }
+  },
+  { immediate: true }
+);
+
+// 清理：离开时恢复导航
+onUnmounted(() => {
+  if (isMobile.value) {
+    uiStore.showNavigation();
   }
 });
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
-});
-
-function handleRefresh() {
-  treeStore.fetchTree();
-}
 </script>
 
 <style scoped>
-.knowledge-view {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.knowledge-layout {
-  flex: 1;
-  display: flex;
-  gap: 0;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.knowledge-sidebar {
-  position: relative;
-  width: 280px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: #ffffff;
-  box-shadow: 4px 0 16px -2px rgba(0, 0, 0, 0.08), 6px 0 24px -2px rgba(0, 0, 0, 0.06);
-  transition: var(--transition-slow);
-  flex-shrink: 0;
-  z-index: 10;
-}
-
-.knowledge-sidebar.collapsed {
-  width: 0;
-  opacity: 0;
-  border-right-color: transparent;
-}
-
-/* Web端侧边栏把手 */
-.sidebar-handle {
-  position: absolute;
-  left: 280px; /* 紧贴侧边栏右边缘 */
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  border: none;
-  border-radius: 0 12px 12px 0;
-  box-shadow: 
-    inset 2px 0 4px -2px rgba(0, 0, 0, 0.03),
-    4px 0 16px -2px rgba(0, 0, 0, 0.08), 
-    6px 0 24px -2px rgba(0, 0, 0, 0.06);
-  cursor: pointer;
-  z-index: 20;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: var(--color-text-secondary);
-  opacity: 1;
-}
-
-/* 侧边栏展开时，把手样式 */
-.knowledge-sidebar:not(.collapsed) ~ .sidebar-handle {
-  box-shadow: 
-    inset 2px 0 4px -2px rgba(0, 0, 0, 0.03),
-    4px 0 16px -2px rgba(0, 0, 0, 0.08), 
-    6px 0 24px -2px rgba(0, 0, 0, 0.06);
-}
-
-/* 侧边栏收起时，把手样式 - 更明显 */
-.knowledge-layout:has(.knowledge-sidebar.collapsed) .sidebar-handle {
-  left: 0;
-  border: none;
-  border-radius: 0 12px 12px 0; /* 左侧直角，右侧圆角 */
-  background: #ffffff;
-  box-shadow: 
-    4px 0 20px -2px rgba(0, 0, 0, 0.12), 
-    6px 0 32px -2px rgba(0, 0, 0, 0.08);
-  width: 28px;
-  height: 100px;
-}
-
-/* 悬停效果 - 简洁优雅 */
-.sidebar-handle:hover {
-  background: #f8f9fa;
-  color: var(--color-text-primary);
-  transform: translateY(-50%) scale(1.05);
-  box-shadow: 
-    inset 2px 0 4px -2px rgba(0, 0, 0, 0.03),
-    5px 0 20px -2px rgba(0, 0, 0, 0.12), 
-    8px 0 36px -2px rgba(0, 0, 0, 0.1);
-}
-
-.sidebar-handle :deep(svg) {
-  font-size: 16px;
-  transition: transform 0.2s ease;
-}
-
-.sidebar-handle:hover :deep(svg) {
-  transform: translateX(2px);
-}
-
-.sidebar-handle:active {
-  transform: translateY(-50%) scale(0.95);
-}
-
-/* 移动端隐藏把手 */
-@media (max-width: 768px) {
-  .sidebar-handle {
-    display: none;
-  }
-}
-
-/* 移动端抽屉式侧边栏 */
-@media (max-width: 768px) {
-  .knowledge-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 85%;
-    max-width: 320px;
-    z-index: 100;
-    transform: translateX(-100%);
-    opacity: 1;
-    background: #ffffff;
-    box-shadow: 6px 0 24px -4px rgba(0, 0, 0, 0.15), 10px 0 48px -4px rgba(0, 0, 0, 0.1);
-    transition: var(--transition-slow);
-  }
-
-  .knowledge-sidebar.collapsed {
-    width: 85%;
-    max-width: 320px;
-    opacity: 1;
-    transform: translateX(-100%);
-  }
-
-  .knowledge-sidebar:not(.collapsed) {
-    transform: translateX(0);
-  }
-}
-
-.knowledge-content {
-  position: relative;
-  flex: 1;
-  height: 100%;
-  overflow: hidden;
-  transition: var(--transition-slow);
-}
-
-.workspace-shell {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: var(--color-bg-primary);
-  overflow: hidden;
-}
-
-/* 移动端侧边栏遮罩 */
-.sidebar-overlay {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .sidebar-overlay {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--color-overlay);
-    z-index: 99;
-    backdrop-filter: blur(2px);
-  }
-}
+/* 适配器组件，无需样式 */
 </style>

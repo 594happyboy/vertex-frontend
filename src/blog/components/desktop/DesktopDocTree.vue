@@ -1,95 +1,114 @@
 <template>
-  <div class="doc-tree">
+  <div class="desktop-doc-tree">
     <div class="tree-list-wrapper">
       <!-- 顶部操作区：搜索框 -->
       <div class="tree-actions">
-            <div class="search-box">
-              <Icon icon="mdi:magnify" class="search-icon" />
-              <input v-model="searchKeyword" type="text" placeholder="搜索文档或分组..." />
-              <button v-if="searchKeyword" class="search-clear" type="button" @click="clearSearch">
-                <Icon icon="mdi:close-circle" />
-              </button>
-            </div>
+        <div class="search-box">
+          <Icon icon="mdi:magnify" class="search-icon" />
+          <input v-model="searchKeyword" type="text" placeholder="搜索文档或分组..." />
+          <button v-if="searchKeyword" class="search-clear" type="button" @click="clearSearch">
+            <Icon icon="mdi:close-circle" />
+          </button>
+        </div>
+      </div>
+      
+      <!-- 目录树列表（带状态遮罩） -->
+      <div class="tree-list-container">
+        <!-- Loading 状态 -->
+        <div v-if="loading" class="tree-status">
+          <div class="status-loader">
+            <span class="ring"></span>
+            <Icon icon="mdi:loading" class="spin" />
           </div>
-          
-          <!-- 目录树列表（带状态遮罩） -->
-          <div class="tree-list-container">
-            <!-- Loading 状态 -->
-            <div v-if="loading" class="tree-status">
-              <div class="status-loader">
-                <span class="ring"></span>
-                <Icon icon="mdi:loading" class="spin" />
+          <span>正在加载目录结构...</span>
+        </div>
+
+        <!-- Error 状态 -->
+        <div v-else-if="error" class="tree-status tree-status--error">
+          <Icon icon="mdi:alert-circle-outline" />
+          <span>{{ error }}</span>
+        </div>
+
+        <!-- 搜索无结果 -->
+        <div v-else-if="tree.length === 0 && isSearching" class="tree-status tree-status--no-results">
+          <Icon icon="mdi:text-box-search-outline" />
+          <p class="tree-status__text">未找到匹配的文档或分组</p>
+          <p class="tree-status__hint">试试其他搜索关键词</p>
+        </div>
+
+        <!-- 目录树列表 -->
+        <div v-else class="tree-list" data-scroll>
+          <!-- 固定根目录 -->
+          <div class="root-directory">
+            <div 
+              class="root-item"
+              :class="{ 'root-active': !selectedId }"
+              @click="handleSelectRoot"
+            >
+              <div class="root-leading">
+                <span class="root-icon">
+                  <Icon icon="mdi:folder-open" />
+                </span>
+                <span class="root-label">全部文档</span>
               </div>
-              <span>正在加载目录结构...</span>
-            </div>
-
-            <!-- Error 状态 -->
-            <div v-else-if="error" class="tree-status tree-status--error">
-              <Icon icon="mdi:alert-circle-outline" />
-              <span>{{ error }}</span>
-            </div>
-
-            <!-- 搜索无结果 -->
-            <div v-else-if="tree.length === 0 && isSearching" class="tree-status tree-status--no-results">
-              <Icon icon="mdi:text-box-search-outline" />
-              <p class="tree-status__text">未找到匹配的文档或分组</p>
-              <p class="tree-status__hint">试试其他搜索关键词</p>
-            </div>
-
-            <!-- 目录树列表 -->
-            <div v-else class="tree-list" data-scroll>
-              <!-- 固定根目录 -->
-              <div class="root-directory">
-                <div 
-                  class="root-item"
-                  :class="{ 'root-active': !selectedId }"
-                  @click="handleSelectRoot"
-                >
-                  <div class="root-leading">
-                    <span class="root-icon">
-                      <Icon icon="mdi:folder-open" />
-                    </span>
-                    <span class="root-label">全部文档</span>
-                  </div>
-                  
-                  <div class="root-actions" ref="rootMenuRef">
-                    <button class="tree-action-btn" @click.stop="toggleRootMenu" title="更多操作">
-                      <Icon icon="mdi:dots-horizontal" />
+              
+              <div class="root-actions" ref="rootMenuRef">
+                <button class="tree-action-btn" @click.stop="toggleRootMenu" title="更多操作">
+                  <Icon icon="mdi:dots-horizontal" />
+                </button>
+                <transition name="tree-menu-fade-scale">
+                  <div v-if="showRootMenu" class="tree-action-menu">
+                    <button class="tree-menu-item" @click="handleRootCreateGroup">
+                      <Icon icon="mdi:folder-plus" />
+                      <span>新建子分组</span>
                     </button>
-                    <transition name="tree-menu-fade-scale">
-                      <div v-if="showRootMenu" class="tree-action-menu">
-                        <button class="tree-menu-item" @click="handleRootCreateGroup">
-                          <Icon icon="mdi:folder-plus" />
-                          <span>新建子分组</span>
-                        </button>
-                        <button class="tree-menu-item" @click="handleRootCreateDoc">
-                          <Icon icon="mdi:file-document-plus" />
-                          <span>新建文档</span>
-                        </button>
-                        <button class="tree-menu-item" @click="handleRootImportFile">
-                          <Icon icon="mdi:file-import" />
-                          <span>导入文档</span>
-                        </button>
-                        <button class="tree-menu-item" @click="handleRootBatchImport">
-                          <Icon icon="mdi:folder-zip" />
-                          <span>批量导入</span>
-                        </button>
-                      </div>
-                    </transition>
+                    <button class="tree-menu-item" @click="handleRootCreateRichDoc">
+                      <Icon icon="mdi:file-document-edit" />
+                      <span>新建文档</span>
+                    </button>
+                    <button class="tree-menu-item" @click="handleRootCreateDoc">
+                      <Icon icon="mdi:language-markdown" />
+                      <span>新建Markdown文档</span>
+                    </button>
+                    <button class="tree-menu-item" @click="handleRootImportFile">
+                      <Icon icon="mdi:file-import" />
+                      <span>导入文档</span>
+                    </button>
+                    <button class="tree-menu-item" @click="handleRootBatchImport">
+                      <Icon icon="mdi:folder-zip" />
+                      <span>批量导入</span>
+                    </button>
                   </div>
-                </div>
-                
-                <!-- 子节点 -->
-                <div class="root-children">
-                  <TreeNode v-for="node in tree" :key="`${node.nodeType}-${node.id}`" :node="node" :depth="1" :selected-id="selectedId"
-                    :selected-type="selectedType" :expanded-keys="expandedKeys" :is-root-child="true" @select="handleSelect" @toggle="handleToggle"
-                    @create-group="handleCreateGroup" @create-doc="handleCreateDoc" @import-file="handleImportFile"
-                    @batch-import="handleBatchImport" @rename="handleRename" @delete="handleDelete" />
-                </div>
+                </transition>
               </div>
+            </div>
+            
+            <!-- 子节点 -->
+            <div class="root-children">
+              <TreeNode 
+                v-for="node in tree" 
+                :key="`${node.nodeType}-${node.id}`" 
+                :node="node" 
+                :depth="1" 
+                :selected-id="selectedId"
+                :selected-type="selectedType" 
+                :expanded-keys="expandedKeys" 
+                :is-root-child="true" 
+                @select="handleSelect" 
+                @toggle="handleToggle"
+                @create-group="handleCreateGroup" 
+                @create-doc="handleCreateDoc" 
+                @create-rich-doc="handleCreateRichDoc" 
+                @import-file="handleImportFile"
+                @batch-import="handleBatchImport" 
+                @rename="handleRename" 
+                @delete="handleDelete" 
+              />
             </div>
           </div>
         </div>
+      </div>
+    </div>
 
     <!-- 隐藏的文件输入 -->
     <input ref="batchInputRef" type="file" accept=".zip" style="display: none" @change="handleBatchFileSelect" />
@@ -100,19 +119,16 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Icon } from '@iconify/vue';
-import { useResponsive } from '@/composables';
-import { useTreeStore } from '../stores/tree';
-import { useDocStore } from '../stores/doc';
-import { useUiStore } from '../stores/ui';
-import { batchUploadDocuments } from '../api/document';
-import { useTreeMenu } from '../composables/useTreeMenu';
-import TreeNode from './TreeNode.vue';
-import { FILE_SIZE_LIMITS, DOCUMENT_ACCEPT } from '../constants';
-import { createTextFile, extractTitle, validateBatchFile } from '../utils/fileHelpers';
-import { formatBatchUploadResult } from '../utils/uiHelpers';
-import { filterTree } from '../utils/treeHelpers';
-
-const { isMobile } = useResponsive();
+import { useTreeStore } from '../../stores/tree';
+import { useDocStore } from '../../stores/doc';
+import { useUiStore } from '../../stores/ui';
+import { batchUploadDocuments } from '../../api/document';
+import { useTreeMenu } from '../../composables/useTreeMenu';
+import TreeNode from '../TreeNode.vue';
+import { FILE_SIZE_LIMITS, DOCUMENT_ACCEPT } from '../../constants';
+import { createTextFile, extractTitle, validateBatchFile } from '../../utils/fileHelpers';
+import { formatBatchUploadResult } from '../../utils/uiHelpers';
+import { filterTree } from '../../utils/treeHelpers';
 
 // Stores
 const treeStore = useTreeStore();
@@ -153,6 +169,7 @@ const expandedKeys = computed(() => treeStore.expandedKeys);
 // ===== 根目录菜单操作 =====
 const handleRootCreateGroup = handleRootMenuAction(() => handleCreateGroup(null));
 const handleRootCreateDoc = handleRootMenuAction(() => handleCreateDoc(null));
+const handleRootCreateRichDoc = handleRootMenuAction(() => handleCreateRichDoc(null));
 const handleRootImportFile = handleRootMenuAction(() => handleImportFile(null));
 const handleRootBatchImport = handleRootMenuAction(() => handleBatchImport(null));
 
@@ -190,12 +207,31 @@ async function handleCreateGroup(parentId) {
 }
 
 async function handleCreateDoc(groupId) {
-  const title = prompt('请输入文档标题：');
+  const title = prompt('请输入Markdown文档标题：');
   if (!title?.trim()) return;
 
   try {
     const trimmedTitle = title.trim();
     const file = createTextFile(trimmedTitle, 'md');
+    const doc = await docStore.createDoc(trimmedTitle, file, groupId);
+    
+    await treeStore.fetchTree();
+    treeStore.selectNode(doc.id, 'document');
+    if (groupId) treeStore.expandNode(groupId);
+    
+    uiStore.showSuccess('Markdown文档创建成功');
+  } catch (error) {
+    uiStore.showError(error.message || '创建Markdown文档失败');
+  }
+}
+
+async function handleCreateRichDoc(groupId) {
+  const title = prompt('请输入文档标题：');
+  if (!title?.trim()) return;
+
+  try {
+    const trimmedTitle = title.trim();
+    const file = createTextFile(trimmedTitle, 'html');
     const doc = await docStore.createDoc(trimmedTitle, file, groupId);
     
     await treeStore.fetchTree();
@@ -329,9 +365,9 @@ async function handleBatchFileSelect(event) {
 </script>
 
 <style scoped>
-@import '../styles/tree-menu.css';
+@import '../../styles/tree-menu.css';
 
-.doc-tree {
+.desktop-doc-tree {
   position: relative;
   height: 100%;
   display: flex;
@@ -339,13 +375,28 @@ async function handleBatchFileSelect(event) {
   overflow: hidden;
 }
 
-@media (max-width: 768px) {
-  .doc-tree {
-    padding: 6px;
-  }
+/* 直接引用 DocTree 的样式，但只保留桌面端相关 */
+/* 这里复制 DocTree.vue 的样式，但去掉所有 @media (max-width: 768px) 的移动端样式 */
+
+.tree-list-wrapper {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* 搜索框样式 */
+.tree-actions {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.05);
+  flex-shrink: 0;
+}
+
 .search-box {
   position: relative;
   display: flex;
@@ -362,13 +413,6 @@ async function handleBatchFileSelect(event) {
   transition: var(--transition-base);
 }
 
-@media (max-width: 768px) {
-  .search-box {
-    padding: 0 8px;
-    height: 32px;
-  }
-}
-
 .search-box:focus-within {
   border-color: var(--color-border-focus);
   box-shadow: 0 0 0 3px var(--color-primary-light), inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -378,12 +422,6 @@ async function handleBatchFileSelect(event) {
   font-size: var(--icon-size-md);
   color: var(--color-text-tertiary);
   flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .search-icon {
-    font-size: var(--icon-size-mobile-md);
-  }
 }
 
 .search-box input {
@@ -398,12 +436,6 @@ async function handleBatchFileSelect(event) {
 
 .search-box input::placeholder {
   color: var(--color-text-tertiary);
-}
-
-@media (max-width: 768px) {
-  .search-box input {
-    font-size: var(--font-size-mobile-base);
-  }
 }
 
 .search-clear {
@@ -421,13 +453,6 @@ async function handleBatchFileSelect(event) {
   flex-shrink: 0;
 }
 
-@media (max-width: 768px) {
-  .search-clear {
-    width: 22px;
-    height: 22px;
-  }
-}
-
 .search-clear:hover {
   color: var(--color-text-primary);
 }
@@ -436,41 +461,6 @@ async function handleBatchFileSelect(event) {
   font-size: var(--icon-size-sm);
 }
 
-@media (max-width: 768px) {
-  .search-clear :deep(svg) {
-    font-size: var(--icon-size-mobile-sm);
-  }
-}
-
-/* 目录树容器 */
-.tree-list-wrapper {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* 目录树顶部操作区（搜索框） */
-.tree-actions {
-  display: flex;
-  flex-direction: column;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--color-border);
-  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.05);
-  flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .tree-actions {
-    padding: 8px 10px;
-    gap: var(--spacing-mobile-xs);
-  }
-}
-
-/* 目录树列表容器（包含状态和列表） */
 .tree-list-container {
   flex: 1;
   position: relative;
@@ -498,13 +488,6 @@ async function handleBatchFileSelect(event) {
   z-index: 10;
 }
 
-@media (max-width: 768px) {
-  .tree-status {
-    gap: var(--spacing-mobile-md);
-    padding: var(--spacing-mobile-2xl) var(--spacing-mobile-md);
-  }
-}
-
 .tree-status--error {
   color: var(--color-danger);
 }
@@ -522,12 +505,6 @@ async function handleBatchFileSelect(event) {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
   margin-top: calc(var(--spacing-xs) * -1);
-}
-
-@media (max-width: 768px) {
-  .tree-status__hint {
-    font-size: var(--font-size-mobile-xs);
-  }
 }
 
 .status-loader {
@@ -552,7 +529,6 @@ async function handleBatchFileSelect(event) {
   animation: spin 1s linear infinite;
 }
 
-/* 目录树列表 */
 .tree-list {
   flex: 1;
   overflow-y: auto;
@@ -562,13 +538,6 @@ async function handleBatchFileSelect(event) {
   background: linear-gradient(180deg, rgba(148, 163, 184, 0.05) 0%, rgba(148, 163, 184, 0) 20%);
 }
 
-@media (max-width: 768px) {
-  .tree-list {
-    padding: 6px;
-  }
-}
-
-/* 固定根目录样式 */
 .root-directory {
   display: flex;
   flex-direction: column;
@@ -671,31 +640,6 @@ async function handleBatchFileSelect(event) {
   border-left: 1px solid rgba(148, 163, 184, 0.4);
 }
 
-@media (max-width: 768px) {
-  .root-item {
-    padding: 2px 8px;
-    margin-bottom: 3px;
-  }
-
-  .root-icon {
-    width: 20px;
-    height: 20px;
-  }
-
-  .root-icon :deep(svg) {
-    font-size: 12px;
-  }
-
-  .root-label {
-    font-size: var(--font-size-mobile-sm);
-  }
-
-  .root-children {
-    margin-left: 10px;
-    padding-left: 6px;
-  }
-}
-
 .tree-list[data-scroll]::-webkit-scrollbar {
   width: var(--spacing-xs);
 }
@@ -710,37 +654,24 @@ async function handleBatchFileSelect(event) {
   color: var(--color-text-secondary);
 }
 
-@media (max-width: 768px) {
-  .tree-status__text {
-    font-size: var(--font-size-mobile-sm);
-  }
-}
-
 @keyframes spin {
   from {
     transform: rotate(0deg);
   }
-
   to {
     transform: rotate(360deg);
   }
 }
 
 @keyframes pulse {
-
-  0%,
-  100% {
+  0%, 100% {
     transform: scale(0.96);
     opacity: 0.75;
   }
-
   50% {
     transform: scale(1.05);
     opacity: 1;
   }
 }
 </style>
-
-
-
 

@@ -35,9 +35,13 @@
                 <Icon icon="mdi:folder-plus" />
                 <span>新建子分组</span>
               </button>
-              <button class="tree-menu-item" @click="handleCreateDoc">
-                <Icon icon="mdi:file-document-plus" />
+              <button class="tree-menu-item" @click="handleCreateRichDoc">
+                <Icon icon="mdi:file-document-edit" />
                 <span>新建文档</span>
+              </button>
+              <button class="tree-menu-item" @click="handleCreateDoc">
+                <Icon icon="mdi:language-markdown" />
+                <span>新建Markdown文档</span>
               </button>
               <button class="tree-menu-item" @click="handleImportFile">
                 <Icon icon="mdi:file-import" />
@@ -75,6 +79,7 @@
         @toggle="(id) => $emit('toggle', id)"
         @create-group="(id) => $emit('create-group', id)"
         @create-doc="(id) => $emit('create-doc', id)"
+        @create-rich-doc="(id) => $emit('create-rich-doc', id)"
         @import-file="(id) => $emit('import-file', id)"
         @batch-import="(id) => $emit('batch-import', id)"
         @rename="(node, type) => $emit('rename', node, type)"
@@ -120,6 +125,7 @@ const emit = defineEmits([
   'toggle',
   'create-group',
   'create-doc',
+  'create-rich-doc',
   'import-file',
   'batch-import',
   'rename',
@@ -136,7 +142,8 @@ const MAX_INDENT_DEPTH = 3;
 const ICON_MAP = {
   pdf: 'mdi:file-pdf-box',
   txt: 'mdi:file-document',
-  md: 'mdi:file-document-outline'
+  md: 'mdi:file-document-outline',
+  html: 'mdi:file-code'
 };
 
 // 计算属性
@@ -176,6 +183,7 @@ const handleToggle = () => emit('toggle', props.node.id);
 // 菜单操作
 const handleCreateGroup = handleMenuAction(() => emit('create-group', props.node.id));
 const handleCreateDoc = handleMenuAction(() => emit('create-doc', props.node.id));
+const handleCreateRichDoc = handleMenuAction(() => emit('create-rich-doc', props.node.id));
 const handleImportFile = handleMenuAction(() => emit('import-file', props.node.id));
 const handleBatchImport = handleMenuAction(() => emit('batch-import', props.node.id));
 const handleRename = handleMenuAction(() => emit('rename', props.node, nodeType.value));
@@ -317,6 +325,12 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
   border-color: var(--color-danger);
   background: var(--color-danger-light);
   color: var(--color-danger);
+}
+
+.node-avatar--doc-html {
+  border-color: var(--color-warning);
+  background: var(--color-warning-light);
+  color: var(--color-warning);
 }
 
 .node-avatar--doc-default {
