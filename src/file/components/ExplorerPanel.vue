@@ -49,6 +49,7 @@
         @toggle-select="handleToggleSelect"
         @select-all="handleSelectAll"
         @enter-folder="handleEnterFolder"
+        @edit="handleEdit"
         @download="handleDownload"
         @copy-url="handleCopyUrl"
         @show-detail="handleShowDetail"
@@ -88,9 +89,9 @@ import ExplorerToolbar from './ExplorerToolbar.vue';
 import ExplorerContent from './ExplorerContent.vue';
 
 const props = defineProps({
-  /** 当前文件夹ID */
+  /** 当前文件夹ID（公开ID，String类型） */
   folderId: {
-    type: [Number, String],
+    type: String,
     default: null,
   },
 });
@@ -99,6 +100,7 @@ const emit = defineEmits([
   'navigate',
   'upload',
   'create-folder',
+  'edit',
   'download',
   'copy-url',
   'show-detail',
@@ -136,7 +138,7 @@ const stats = computed(() => store.currentFolderStats);
 const remainingCount = computed(() => {
   const cache = store.currentFolderCache;
   if (cache && cache.stats) {
-    const total = cache.stats.totalFolders + cache.stats.totalFiles;
+    const total = cache.stats.totalItems || (cache.stats.totalFolders + cache.stats.totalFiles);
     return total - cache.items.length;
   }
   return 0;
@@ -280,6 +282,10 @@ function handleShowDetail(itemId) {
 /**
  * 处理删除
  */
+function handleEdit(itemId) {
+  emit('edit', itemId);
+}
+
 function handleDelete(itemId) {
   emit('delete', itemId);
 }

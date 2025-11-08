@@ -9,6 +9,7 @@
         :selected="selectedIds.includes(item.id)"
         @toggle-select="$emit('toggle-select', item.id)"
         @enter-folder="$emit('enter-folder', item.id)"
+        @edit="$emit('edit', item.id)"
         @download="$emit('download', item.id)"
         @copy-url="$emit('copy-url', item.id)"
         @show-detail="$emit('show-detail', item.id)"
@@ -33,6 +34,7 @@
           :key="item.id"
           :item="item"
           @enter-folder="$emit('enter-folder', item.id)"
+          @edit="$emit('edit', item.id)"
           @download="$emit('download', item.id)"
           @copy-url="$emit('copy-url', item.id)"
           @show-detail="$emit('show-detail', item.id)"
@@ -89,6 +91,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'enter-folder',
+  'edit',
   'download',
   'copy-url',
   'show-detail',

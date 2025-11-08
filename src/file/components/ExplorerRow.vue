@@ -45,6 +45,14 @@
     <!-- 操作列 -->
     <div class="row-actions">
       <button
+        v-if="item.type === 'file' && isEditableTextFile(item)"
+        class="action-btn"
+        title="编辑"
+        @click.stop="$emit('edit')"
+      >
+        <Icon icon="mdi:file-edit-outline" />
+      </button>
+      <button
         v-if="item.type === 'file'"
         class="action-btn"
         title="下载"
@@ -76,6 +84,7 @@ import { Icon } from '@iconify/vue';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
+import { isEditableTextFile } from '../utils/fileTypes';
 
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');
@@ -90,6 +99,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'enter-folder',
+  'edit',
   'download',
   'copy-url',
   'show-detail',

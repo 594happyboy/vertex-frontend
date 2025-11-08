@@ -35,8 +35,9 @@ export const useFileStore = defineStore('file', {
     
     /**
      * 文件夹内容缓存
+     * ⚠️ 注意：所有ID均为String类型的公开ID（21位随机字符串），不再是数字ID
      * foldersMap[folderId] = {
-     *   meta: { id, name, type, childFolderCount, childFileCount, ... },
+     *   meta: { id: string, name, type, childFolderCount, childFileCount, ... },
      *   items: [],           // 文件夹+文件混合列表
      *   cursor: null,        // 当前游标
      *   hasMore: true,       // 是否有更多数据
@@ -49,14 +50,14 @@ export const useFileStore = defineStore('file', {
     foldersMap: {},
     
     // ========== 文件夹相关 ==========
-    currentFolderId: null,    // 当前选中的文件夹ID (null表示根目录)
+    currentFolderId: null,    // 当前选中的文件夹ID (string类型公开ID, null表示根目录)
     folderPath: [],           // 当前文件夹的面包屑路径
     folderLoading: false,     // 文件夹操作加载状态
     
     // ========== 文件相关 ==========
     files: [],                // 文件列表(用于兼容旧组件)
-    selectedFiles: [],        // 多选的文件ID列表
-    currentFileId: null,      // 当前选中的文件ID（用于详情面板）
+    selectedFiles: [],        // 多选的文件ID列表（string类型公开ID数组）
+    currentFileId: null,      // 当前选中的文件ID（string类型公开ID，用于详情面板）
     fileLoading: false,       // 文件操作加载状态
     
     // ========== 分页相关 ==========
@@ -212,11 +213,9 @@ export const useFileStore = defineStore('file', {
      * 初始化文件管理器
      */
     async initialize() {
-      if (!this.userId) return;
-      
       try {
         // 1. 获取根目录信息
-        const rootFolder = await fetchRootFolderService(this.userId);
+        const rootFolder = await fetchRootFolderService();
         
         if (rootFolder) {
           // 初始化根目录缓存
@@ -304,7 +303,6 @@ export const useFileStore = defineStore('file', {
       const loadingPromise = (async () => {
       try {
         const params = {
-          userId: this.userId,
           limit: 50,
           keyword: cache.keyword,
           orderBy: cache.sort.field,
@@ -373,7 +371,6 @@ export const useFileStore = defineStore('file', {
       
       try {
         const params = {
-          userId: this.userId,
           limit: 50,
           keyword: cache.keyword,
           orderBy: cache.sort.field,
@@ -436,7 +433,6 @@ export const useFileStore = defineStore('file', {
       
       try {
         const params = {
-          userId: this.userId,
           keyword: keyword.trim(),
           limit: 50,
           orderBy: cache.sort?.field || 'name',
@@ -484,6 +480,8 @@ export const useFileStore = defineStore('file', {
     
     /**
      * 切换当前文件夹
+     * @param {string|null} folderId - 文件夹公开ID（string类型），null表示根目录
+     * @param {Object} options - 选项参数
      */
     async navigateToFolder(folderId, options = {}) {
       this.currentFolderId = folderId;
@@ -502,15 +500,16 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 获取文件夹路径
+     * @param {string} folderId - 文件夹公开ID（string类型）
      */
     async fetchFolderPath(folderId) {
-      if (!this.userId || !folderId) {
+      if (!folderId) {
         this.folderPath = [];
         return;
       }
       
       try {
-        this.folderPath = await fetchFolderPathService(folderId, this.userId);
+        this.folderPath = await fetchFolderPathService(folderId);
       } catch (error) {
         console.error('获取文件夹路径失败:', error);
         this.folderPath = [];
@@ -519,13 +518,12 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 创建文件夹
+     * @param {Object} data - { name, parentId?, color?, description? } - parentId为string类型的公开ID
      */
     async createFolder(data) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       this.folderLoading = true;
       try {
-        const folder = await createFolderService(data, this.userId);
+        const folder = await createFolderService(data);
         
         // 清除父目录缓存
         const parentKey = data.parentId || 'root';
@@ -550,13 +548,13 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 更新文件夹
+     * @param {string} id - 文件夹公开ID（string类型）
+     * @param {Object} data - 更新数据
      */
     async updateFolder(id, data) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       this.folderLoading = true;
       try {
-        const folder = await updateFolderService(id, data, this.userId);
+        const folder = await updateFolderService(id, data);
         
         // 清除相关缓存
         Object.keys(this.foldersMap).forEach(key => {
@@ -578,13 +576,13 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 删除文件夹
+     * @param {string} id - 文件夹公开ID（string类型）
+     * @param {boolean} recursive - 是否递归删除
      */
     async deleteFolder(id, recursive = false) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       this.folderLoading = true;
       try {
-        await deleteFolderService(id, this.userId, recursive);
+        await deleteFolderService(id, recursive);
         
         // 清除被删除文件夹的缓存
         delete this.foldersMap[id];
@@ -618,12 +616,11 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 批量排序文件夹
+     * @param {Array<{id: string, sortIndex: number}>} items - items中的id为string类型公开ID
      */
     async sortFolders(items) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       try {
-        await batchSortFoldersService(items, this.userId);
+        await batchSortFoldersService(items);
         return true;
       } catch (error) {
         console.error('排序文件夹失败:', error);
@@ -639,11 +636,8 @@ export const useFileStore = defineStore('file', {
      * 上传文件
      */
     async uploadFile(file, options = {}) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       try {
         const uploadOptions = {
-          userId: this.userId,
           folderId: this.currentFolderId,
           ...options,
         };
@@ -665,12 +659,12 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 更新文件信息
+     * @param {string} id - 文件公开ID（string类型）
+     * @param {Object} data - 更新数据
      */
     async updateFile(id, data) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       try {
-        const file = await updateFileService(id, data, this.userId);
+        const file = await updateFileService(id, data);
         
         // 更新缓存中的文件信息
         Object.values(this.foldersMap).forEach(cache => {
@@ -690,12 +684,11 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 删除文件
+     * @param {string} id - 文件公开ID（string类型）
      */
     async deleteFile(id) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       try {
-        await deleteFileService(id, this.userId);
+        await deleteFileService(id);
         
         // 如果删除的是当前选中的文件，清除选中状态
         if (id === this.currentFileId) {
@@ -719,12 +712,12 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 移动文件
+     * @param {string} fileId - 文件公开ID（string类型）
+     * @param {string|null} targetFolderId - 目标文件夹公开ID（string类型）
      */
     async moveFile(fileId, targetFolderId) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       try {
-        await moveFileService(fileId, targetFolderId, this.userId);
+        await moveFileService(fileId, targetFolderId);
         
         // 清除源和目标目录缓存
         const sourceKey = this.currentFolderId || 'root';
@@ -741,12 +734,12 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 批量移动文件
+     * @param {Array<string>} fileIds - 文件公开ID数组（string类型）
+     * @param {string|null} targetFolderId - 目标文件夹公开ID（string类型）
      */
     async batchMoveFiles(fileIds, targetFolderId) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       try {
-        await batchMoveFilesService(fileIds, targetFolderId, this.userId);
+        await batchMoveFilesService(fileIds, targetFolderId);
         this.clearSelection();
         
         // 清除源和目标目录缓存
@@ -764,12 +757,11 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 批量删除文件
+     * @param {Array<string>} fileIds - 文件公开ID数组（string类型）
      */
     async batchDeleteFiles(fileIds) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       try {
-        await batchDeleteFilesService(fileIds, this.userId);
+        await batchDeleteFilesService(fileIds);
         this.clearSelection();
         
         // 清除当前目录缓存
@@ -787,6 +779,8 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 获取文件下载链接
+     * @param {string} id - 文件公开ID（string类型）
+     * @returns {string} 下载URL
      */
     getDownloadUrl(id) {
       return buildDownloadUrl(id);
@@ -796,6 +790,7 @@ export const useFileStore = defineStore('file', {
     
     /**
      * 切换文件选中状态
+     * @param {string} fileId - 文件公开ID（string类型）
      */
     toggleFileSelection(fileId) {
       const index = this.selectedFiles.indexOf(fileId);
@@ -808,6 +803,7 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 选中文件
+     * @param {string} fileId - 文件公开ID（string类型）
      */
     selectFile(fileId) {
       if (!this.selectedFiles.includes(fileId)) {
@@ -817,6 +813,7 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 取消选中文件
+     * @param {string} fileId - 文件公开ID（string类型）
      */
     deselectFile(fileId) {
       this.selectedFiles = this.selectedFiles.filter(id => id !== fileId);
@@ -847,6 +844,7 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 设置当前文件（用于详情面板）
+     * @param {string|null} fileId - 文件公开ID（string类型）
      */
     setCurrentFile(fileId) {
       this.currentFileId = fileId;
@@ -934,16 +932,14 @@ export const useFileStore = defineStore('file', {
      * @param {boolean} reset - 是否重置列表（清空游标）
      */
     async fetchRecycleBinFiles(reset = false) {
-      if (!this.userId) return;
-      
       // 重置时清空游标
       if (reset) {
         this.recycleFiles = [];
         this.recycleBinCursor = null;
       }
       
-      // 没有更多数据时不再请求
-      if (!reset && !this.recycleBinHasMore && this.recycleBinCursor !== null) {
+      // 没有更多数据时不再请求（修复逻辑bug）
+      if (!reset && !this.recycleBinHasMore) {
         return;
       }
       
@@ -951,7 +947,6 @@ export const useFileStore = defineStore('file', {
         this.recycleBinLoading = true;
         
         const params = {
-          userId: this.userId,
           cursor: this.recycleBinCursor,
           limit: this.recycleBinLimit,
         };
@@ -986,12 +981,11 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 恢复文件
+     * @param {string} id - 文件公开ID（string类型）
      */
     async restoreFile(id) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       try {
-        await restoreFileService(id, this.userId);
+        await restoreFileService(id);
         await this.fetchRecycleBinFiles(true); // 重置刷新
       } catch (error) {
         console.error('恢复文件失败:', error);
@@ -1001,12 +995,11 @@ export const useFileStore = defineStore('file', {
 
     /**
      * 永久删除文件
+     * @param {string} id - 文件公开ID（string类型）
      */
     async permanentDeleteFile(id) {
-      if (!this.userId) throw new Error('用户未登录');
-      
       try {
-        await permanentDeleteFileService(id, this.userId);
+        await permanentDeleteFileService(id);
         await this.fetchRecycleBinFiles(true); // 重置刷新
       } catch (error) {
         console.error('永久删除文件失败:', error);

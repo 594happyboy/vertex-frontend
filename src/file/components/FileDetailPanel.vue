@@ -92,6 +92,14 @@
           <Icon icon="mdi:download" />
           下载文件
         </button>
+        <button 
+          v-if="isEditableTextFile(file)" 
+          class="detail-btn" 
+          @click="handleEdit"
+        >
+          <Icon icon="mdi:file-edit-outline" />
+          编辑文件
+        </button>
         <button class="detail-btn" @click="handleCopyUrl">
           <Icon icon="mdi:link" />
           复制链接
@@ -117,6 +125,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { Icon } from '@iconify/vue';
+import { isEditableTextFile } from '../utils/fileTypes';
 
 const props = defineProps({
   file: {
@@ -132,6 +141,7 @@ const props = defineProps({
 const emit = defineEmits([
   'close',
   'update',
+  'edit',
   'download',
   'copy-url',
   'move',
@@ -232,6 +242,10 @@ function handleSave() {
 
 function handleDownload() {
   emit('download', props.file.id);
+}
+
+function handleEdit() {
+  emit('edit', props.file.id);
 }
 
 function handleCopyUrl() {

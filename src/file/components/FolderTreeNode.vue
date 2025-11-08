@@ -70,7 +70,7 @@ const props = defineProps({
     required: true,
   },
   currentFolderId: {
-    type: [Number, String],
+    type: String,
     default: null,
   },
   level: {

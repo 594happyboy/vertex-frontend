@@ -87,7 +87,7 @@ const props = defineProps({
     default: () => [],
   },
   currentFolderId: {
-    type: [Number, String],
+    type: String,
     default: null,
   },
   loading: {

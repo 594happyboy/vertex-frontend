@@ -44,6 +44,12 @@ request.interceptors.response.use(
       accessToken = newAccessToken;
     }
     
+    // ===== 特殊处理：跳过标准响应处理的请求 =====
+    // 用于文件下载、原始数据获取等场景
+    if (response.config.__skipStandardResponse) {
+      return response.data;
+    }
+    
     const { data } = response;
     
     // 后端统一返回格式 { code, message, data, timestamp }

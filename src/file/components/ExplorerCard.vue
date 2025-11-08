@@ -58,6 +58,14 @@
     <!-- 快捷操作 (悬浮显示) -->
     <div class="card-actions">
       <button
+        v-if="item.type === 'file' && isEditableTextFile(item)"
+        class="action-btn"
+        title="编辑"
+        @click.stop="$emit('edit')"
+      >
+        <Icon icon="mdi:file-edit-outline" />
+      </button>
+      <button
         v-if="item.type === 'file'"
         class="action-btn"
         title="下载"
@@ -87,6 +95,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Icon } from '@iconify/vue';
+import { isEditableTextFile } from '../utils/fileTypes';
 
 const props = defineProps({
   /** 项目数据 */
@@ -104,6 +113,7 @@ const props = defineProps({
 const emit = defineEmits([
   'toggle-select',
   'enter-folder',
+  'edit',
   'download',
   'copy-url',
   'show-detail',

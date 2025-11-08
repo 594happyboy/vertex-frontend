@@ -28,15 +28,12 @@ export function getDocument(id) {
 export function createDocument(title, file, groupId = null) {
   const formData = new FormData();
   formData.append('file', file);
-  
-  // 根据OpenAPI规范，title和groupId作为query参数传递
-  const params = { title };
+  formData.append('title', title);  // 改为form-data字段
   if (groupId !== null && groupId !== undefined) {
-    params.groupId = groupId;
+    formData.append('groupId', groupId.toString());  // 改为form-data字段
   }
   
   return request.post('/api/documents', formData, {
-    params,
     headers: {
       'Content-Type': 'multipart/form-data',
     },
