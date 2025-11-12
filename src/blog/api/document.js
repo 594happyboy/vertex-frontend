@@ -60,7 +60,7 @@ export function updateDocumentFile(id, file) {
   const formData = new FormData();
   formData.append('file', file);
   
-  return request.patch(`/api/documents/${id}/file`, formData, {
+  return request.patch(`/api/documents/file/${id}`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -73,7 +73,7 @@ export function updateDocumentFile(id, file) {
  * @returns {Promise<string>}
  */
 export function getDocumentDownloadUrl(id) {
-  return request.get(`/api/documents/${id}/download`);
+  return request.get(`/api/documents/download/${id}`);
 }
 
 /**
@@ -104,14 +104,12 @@ export function batchUploadDocuments(file, parentGroupId = null) {
   const formData = new FormData();
   formData.append('file', file);
   
-  // 根据OpenAPI规范，parentGroupId作为query参数传递
-  const params = {};
+  // 根据OpenAPI规范，parentGroupId作为form-data字段传递
   if (parentGroupId !== null && parentGroupId !== undefined) {
-    params.parentGroupId = parentGroupId;
+    formData.append('parentGroupId', parentGroupId.toString());
   }
   
   return request.post('/api/documents/batch-upload', formData, {
-    params,
     headers: {
       'Content-Type': 'multipart/form-data',
     },

@@ -26,7 +26,7 @@ export function getFolderInfo(id) {
  * @returns {Promise<Object>}
  */
 export function getFolderPath(id) {
-  return request.get(`/api/folders/${id}/path`);
+  return request.get(`/api/folders/path/${id}`);
 }
 
 /**
@@ -236,7 +236,7 @@ export function clearCache() {
  * @returns {Promise<Object>}
  */
 export function getFileReferences(publicId) {
-  return request.get(`/api/files/${publicId}/references`);
+  return request.get(`/api/files/references/${publicId}`);
 }
 
 /**
@@ -304,7 +304,7 @@ export function getRootFolder(limit = 50) {
  */
 export function getFolderChildren(folderId, params = {}) {
   const id = folderId || 'root';
-  return request.get(`/api/folders/${id}/children`, { params });
+  return request.get(`/api/folders/children/${id}`, { params });
 }
 
 /**
@@ -315,7 +315,7 @@ export function getFolderChildren(folderId, params = {}) {
  */
 export function getFolderSubfolders(folderId, params = {}) {
   const id = folderId || 'root';
-  return request.get(`/api/folders/${id}/subfolders`, { params });
+  return request.get(`/api/folders/subfolders/${id}`, { params });
 }
 
 /**
@@ -326,7 +326,7 @@ export function getFolderSubfolders(folderId, params = {}) {
  */
 export function searchInFolder(folderId, params = {}) {
   const id = folderId || 'root';
-  return request.get(`/api/folders/${id}/search`, { params });
+  return request.get(`/api/folders/search/${id}`, { params });
 }
 
 // ==================== 文件内容管理 API ====================
