@@ -19,21 +19,47 @@ export function getDocument(id) {
 }
 
 /**
- * 创建文档（新版API，使用FormData）
+ * 创建文档（新版API，使用 FormData）
  * @param {string} title - 文档标题
- * @param {File} file - 文件对象（MD/PDF/TXT）
- * @param {number} groupId - 可选，分组ID
+ * @param {File} file - 文件内容（MD/PDF/TXT 等）
+ * @param {number|null} groupId - 可选：分组ID
  * @returns {Promise<Object>}
  */
 export function createDocument(title, file, groupId = null) {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('title', title);  // 改为form-data字段
+  formData.append('title', title);
   if (groupId !== null && groupId !== undefined) {
-    formData.append('groupId', groupId.toString());  // 改为form-data字段
+    formData.append('groupId', groupId.toString());
   }
-  
+
   return request.post('/api/documents', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+}
+
+/**
+ * 上传单个文档内容（uploadSingle 接口）
+ * 对应 api-docs.json 中的 /api/documents/upload（operationId: uploadSingle）
+ * @param {File} file - 文档文件（二进制）
+ * @param {number|null} groupId - 可选：分组ID
+ * @param {string|null} title - 可选：文档标题，未传时后端将使用文件名
+ * @returns {Promise<Object>}
+ */
+export function uploadSingleDocument(file, groupId = null, title = null) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  if (groupId !== null && groupId !== undefined) {
+    formData.append('groupId', groupId.toString());
+  }
+  if (title !== null && title !== undefined && title !== '') {
+    formData.append('title', title);
+  }
+
+  return request.post('/api/documents/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -53,13 +79,13 @@ export function updateDocument(id, data) {
 /**
  * 更新文档文件（新版API）
  * @param {number} id - 文档ID
- * @param {File} file - 新的文件对象
+ * @param {File} file - 新的文件内容
  * @returns {Promise<Object>}
  */
 export function updateDocumentFile(id, file) {
   const formData = new FormData();
   formData.append('file', file);
-  
+
   return request.patch(`/api/documents/file/${id}`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
@@ -68,7 +94,7 @@ export function updateDocumentFile(id, file) {
 }
 
 /**
- * 获取文档下载URL
+ * 获取文档下载 URL
  * @param {number} id - 文档ID
  * @returns {Promise<string>}
  */
@@ -95,25 +121,25 @@ export function sortDocuments(items) {
 }
 
 /**
- * 批量上传文档（ZIP压缩包）
- * @param {File} file - ZIP文件
- * @param {number} parentGroupId - 父分组ID，可选
+ * 批量上传文档（ZIP 压缩包）
+ * @param {File} file - ZIP 文件
+ * @param {number|null} parentGroupId - 父分组ID，可选
  * @returns {Promise<Object>}
  */
 export function batchUploadDocuments(file, parentGroupId = null) {
   const formData = new FormData();
   formData.append('file', file);
-  
-  // 根据OpenAPI规范，parentGroupId作为form-data字段传递
+
+  // 按 OpenAPI 规范，parentGroupId 作为 form-data 字段传递
   if (parentGroupId !== null && parentGroupId !== undefined) {
     formData.append('parentGroupId', parentGroupId.toString());
   }
-  
+
   return request.post('/api/documents/batch-upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-    // 超时时间设置为5分钟，因为批量上传可能需要较长时间
+    // 批量上传可能耗时较长，单独加长超时时间
     timeout: 300000,
   });
 }

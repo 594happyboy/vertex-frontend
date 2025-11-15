@@ -245,7 +245,7 @@ async function uploadDocument(file, typeName, groupId) {
     uiStore.showInfo('文件上传中，请稍候...');
 
     const title = extractTitle(file.name);
-    const doc = await docStore.createDoc(title, file, groupId);
+    const doc = await docStore.uploadDoc(title, file, groupId);
     await treeStore.fetchTree();
     treeStore.selectNode(doc.id, 'document');
     
