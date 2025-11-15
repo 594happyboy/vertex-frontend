@@ -470,8 +470,7 @@
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
-import { useEditor, EditorContent } from '@tiptap/vue-3';
-import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus';
+import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';

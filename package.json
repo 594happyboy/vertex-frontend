@@ -9,6 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tiptap/core": "^2.0.0",
+    "@tiptap/extension-color": "^2.0.0",
+    "@tiptap/extension-image": "^2.0.0",
+    "@tiptap/extension-link": "^2.0.0",
+    "@tiptap/extension-placeholder": "^2.0.0",
+    "@tiptap/extension-text-align": "^2.0.0",
+    "@tiptap/extension-text-style": "^2.0.0",
+    "@tiptap/extension-underline": "^2.0.0",
+    "@tiptap/starter-kit": "^2.0.0",
+    "@tiptap/vue-3": "^2.0.0",
     "@iconify/vue": "^5.0.0",
     "@vueuse/core": "^14.0.0",
     "axios": "^1.12.2",
