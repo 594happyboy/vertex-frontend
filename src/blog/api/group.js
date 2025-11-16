@@ -17,7 +17,7 @@ export function getDirectoryTree() {
  * @returns {Promise<Object>}
  */
 export function createGroup(data) {
-  return request.post('/api/groups', data);
+  return request.post('/api/groups/create', data);
 }
 
 /**
@@ -27,7 +27,7 @@ export function createGroup(data) {
  * @returns {Promise<Object>}
  */
 export function updateGroup(id, data) {
-  return request.patch(`/api/groups/${id}`, data);
+  return request.patch(`/api/groups/update/${id}`, data);
 }
 
 /**
@@ -36,7 +36,7 @@ export function updateGroup(id, data) {
  * @returns {Promise<void>}
  */
 export function deleteGroup(id) {
-  return request.delete(`/api/groups/${id}`);
+  return request.delete(`/api/groups/remove/${id}`);
 }
 
 /**
@@ -45,6 +45,6 @@ export function deleteGroup(id) {
  * @returns {Promise<void>}
  */
 export function sortGroups(items) {
-  return request.post('/api/sort/groups', { items });
+  return request.post('/api/sort/groups/reorder', { items });
 }
 

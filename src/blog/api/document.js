@@ -6,7 +6,7 @@ import request from '@/api/request';
  * @returns {Promise<PaginatedResponse<DocumentItem>>}
  */
 export function getDocuments(params = {}) {
-  return request.get('/api/documents', { params });
+  return request.get('/api/documents/query', { params });
 }
 
 /**
@@ -15,7 +15,7 @@ export function getDocuments(params = {}) {
  * @returns {Promise<Object>}
  */
 export function getDocument(id) {
-  return request.get(`/api/documents/${id}`);
+  return request.get(`/api/documents/details/${id}`);
 }
 
 /**
@@ -28,15 +28,16 @@ export function getDocument(id) {
 export function createDocument(title, file, groupId = null) {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('title', title);
+  const params = { title };
   if (groupId !== null && groupId !== undefined) {
-    formData.append('groupId', groupId.toString());
+    params.groupId = groupId;
   }
 
-  return request.post('/api/documents', formData, {
+  return request.post('/api/documents/create', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    params,
   });
 }
 
@@ -52,17 +53,19 @@ export function uploadSingleDocument(file, groupId = null, title = null) {
   const formData = new FormData();
   formData.append('file', file);
 
+  const params = {};
   if (groupId !== null && groupId !== undefined) {
-    formData.append('groupId', groupId.toString());
+    params.groupId = groupId;
   }
   if (title !== null && title !== undefined && title !== '') {
-    formData.append('title', title);
+    params.title = title;
   }
 
   return request.post('/api/documents/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    params,
   });
 }
 
@@ -73,7 +76,7 @@ export function uploadSingleDocument(file, groupId = null, title = null) {
  * @returns {Promise<Object>}
  */
 export function updateDocument(id, data) {
-  return request.patch(`/api/documents/${id}`, data);
+  return request.patch(`/api/documents/update/${id}`, data);
 }
 
 /**
@@ -86,7 +89,7 @@ export function updateDocumentFile(id, file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  return request.patch(`/api/documents/file/${id}`, formData, {
+  return request.patch(`/api/documents/replace-file/${id}`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -108,7 +111,7 @@ export function getDocumentDownloadUrl(id) {
  * @returns {Promise<void>}
  */
 export function deleteDocument(id) {
-  return request.delete(`/api/documents/${id}`);
+  return request.delete(`/api/documents/remove/${id}`);
 }
 
 /**
@@ -117,7 +120,7 @@ export function deleteDocument(id) {
  * @returns {Promise<void>}
  */
 export function sortDocuments(items) {
-  return request.post('/api/sort/documents', { items });
+  return request.post('/api/sort/documents/reorder', { items });
 }
 
 /**
