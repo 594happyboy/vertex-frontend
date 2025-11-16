@@ -58,17 +58,9 @@
                 </button>
                 <transition name="tree-menu-fade-scale">
                   <div v-if="showRootMenu" class="tree-action-menu">
-                    <button class="tree-menu-item" @click="handleRootCreateGroup">
-                      <Icon icon="mdi:folder-plus" />
-                      <span>新建子分组</span>
-                    </button>
-                    <button class="tree-menu-item" @click="handleRootCreateRichDoc">
-                      <Icon icon="mdi:file-document-edit" />
-                      <span>新建文档</span>
-                    </button>
-                    <button class="tree-menu-item" @click="handleRootCreateDoc">
-                      <Icon icon="mdi:language-markdown" />
-                      <span>新建Markdown文档</span>
+                    <button class="tree-menu-item" @click="handleRootOpenCreateModal">
+                      <Icon icon="mdi:plus-circle" />
+                      <span>新建...</span>
                     </button>
                     <button class="tree-menu-item" @click="handleRootImportFile">
                       <Icon icon="mdi:file-import" />
@@ -96,9 +88,7 @@
                 :is-root-child="true" 
                 @select="handleSelect" 
                 @toggle="handleToggle"
-                @create-group="handleCreateGroup" 
-                @create-doc="handleCreateDoc" 
-                @create-rich-doc="handleCreateRichDoc" 
+                @open-create-modal="handleOpenCreateModal"
                 @import-file="handleImportFile"
                 @batch-import="handleBatchImport" 
                 @rename="handleRename" 
@@ -113,6 +103,43 @@
     <!-- 隐藏的文件输入 -->
     <input ref="batchInputRef" type="file" accept=".zip" style="display: none" @change="handleBatchFileSelect" />
     <input ref="importInputRef" type="file" :accept="DOCUMENT_ACCEPT" style="display: none" @change="handleImportFileSelect" />
+
+    <Teleport to="body">
+      <transition name="create-modal-fade">
+        <div
+          v-if="showCreateModal"
+          class="create-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          @click="closeCreateModal"
+        >
+          <div class="create-modal" @click.stop>
+            <div class="create-modal__header">
+              <div>
+                <p class="create-modal__eyebrow">内容类型</p>
+                <h3 class="create-modal__title">{{ createModalTitle }}</h3>
+                <p class="create-modal__subtitle">{{ createModalSubtitle }}</p>
+              </div>
+              <button class="create-modal__close" type="button" @click="closeCreateModal">
+                <Icon icon="mdi:close" />
+              </button>
+            </div>
+            <div class="create-modal__list">
+              <button
+                v-for="option in createOptions"
+                :key="option.id"
+                type="button"
+                class="create-modal__item"
+                @click="handleCreateOption(option.action)"
+              >
+                <div class="create-modal__item-title">{{ option.title }}</div>
+                <p class="create-modal__item-desc">{{ option.description }}</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
@@ -141,6 +168,11 @@ const importInputRef = ref(null);
 const currentGroupId = ref(null);
 const uploading = ref(false);
 const searchKeyword = ref('');
+const showCreateModal = ref(false);
+const createModalContext = ref({
+  parentId: null,
+  parentName: '全局文档',
+});
 
 // 使用菜单组合式函数
 const { 
@@ -153,6 +185,44 @@ const {
 // 计算属性
 const normalizedKeyword = computed(() => searchKeyword.value.trim().toLowerCase());
 const isSearching = computed(() => normalizedKeyword.value.length > 0);
+const createModalTitle = computed(() =>
+  createModalContext.value.parentId
+    ? `在「${createModalContext.value.parentName}」下创建`
+    : '在根目录创建内容'
+);
+const createModalSubtitle = computed(() =>
+  createModalContext.value.parentId
+    ? '为当前分组扩充内容，保持结构清晰'
+    : '快速创建顶层内容或分组'
+);
+const createOptions = computed(() => {
+  const parentId = createModalContext.value.parentId;
+  const parentName = createModalContext.value.parentName;
+  const isRoot = !parentId;
+
+  return [
+    {
+      id: 'group',
+      title: isRoot ? '新建分组' : '新建子分组',
+      description: isRoot
+        ? '建立一级分类，帮助从宏观上梳理知识结构'
+        : `在「${parentName}」内部继续细分主题，层级更清晰`,
+      action: () => handleCreateGroup(parentId),
+    },
+    {
+      id: 'rich-doc',
+      title: '新建文档',
+      description: '创建一个图文并茂的富文本文档，记录灵感与故事',
+      action: () => handleCreateRichDoc(parentId),
+    },
+    {
+      id: 'markdown-doc',
+      title: '新建 Markdown 文档',
+      description: '以 Markdown 撰写技术说明或版本记录，简单又高效',
+      action: () => handleCreateDoc(parentId),
+    },
+  ];
+});
 
 const tree = computed(() => {
   return isSearching.value 
@@ -167,9 +237,7 @@ const selectedType = computed(() => treeStore.selectedType);
 const expandedKeys = computed(() => treeStore.expandedKeys);
 
 // ===== 根目录菜单操作 =====
-const handleRootCreateGroup = handleRootMenuAction(() => handleCreateGroup(null));
-const handleRootCreateDoc = handleRootMenuAction(() => handleCreateDoc(null));
-const handleRootCreateRichDoc = handleRootMenuAction(() => handleCreateRichDoc(null));
+const handleRootOpenCreateModal = handleRootMenuAction(() => openCreateModal());
 const handleRootImportFile = handleRootMenuAction(() => handleImportFile(null));
 const handleRootBatchImport = handleRootMenuAction(() => handleBatchImport(null));
 
@@ -190,6 +258,30 @@ function handleToggle(nodeId) {
 
 function handleSelectRoot() {
   treeStore.selectNode(null, null);
+}
+
+function openCreateModal(context = { parentId: null, parentName: '全局文档' }) {
+  createModalContext.value = {
+    parentId: context?.parentId ?? null,
+    parentName: context?.parentName || '全局文档',
+  };
+  showCreateModal.value = true;
+}
+
+function handleOpenCreateModal(payload) {
+  openCreateModal({
+    parentId: payload?.parentId ?? null,
+    parentName: payload?.parentName || '全局文档',
+  });
+}
+
+function closeCreateModal() {
+  showCreateModal.value = false;
+}
+
+function handleCreateOption(action) {
+  closeCreateModal();
+  action?.();
 }
 
 // ===== CRUD 操作 =====
@@ -652,6 +744,121 @@ async function handleBatchFileSelect(event) {
 .tree-status__text {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+.create-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.create-modal {
+  width: min(340px, 100%);
+  max-height: calc(100% - 40px);
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.create-modal__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.create-modal__eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-bottom: 4px;
+}
+
+.create-modal__title {
+  margin: 0;
+  font-size: 18px;
+  color: var(--color-text-primary);
+}
+
+.create-modal__subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.create-modal__close {
+  align-self: flex-start;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-full);
+  border: none;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.create-modal__close:hover {
+  background: var(--color-bg-hover);
+}
+
+.create-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.create-modal__item {
+  border: 1px solid rgba(96, 118, 255, 0.2);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, rgba(248, 250, 255, 0.95), #ffffff);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border var(--transition-fast);
+}
+
+.create-modal__item:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.create-modal__item-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.create-modal__item-desc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.create-modal-fade-enter-active,
+.create-modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.create-modal-fade-enter-from,
+.create-modal-fade-leave-to {
+  opacity: 0;
 }
 
 @keyframes spin {

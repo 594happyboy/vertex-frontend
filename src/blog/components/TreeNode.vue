@@ -31,17 +31,9 @@
         <transition name="tree-menu-fade-scale">
           <div v-if="showMenu" class="tree-action-menu">
             <template v-if="isGroup">
-              <button class="tree-menu-item" @click="handleCreateGroup">
-                <Icon icon="mdi:folder-plus" />
-                <span>新建子分组</span>
-              </button>
-              <button class="tree-menu-item" @click="handleCreateRichDoc">
-                <Icon icon="mdi:file-document-edit" />
-                <span>新建文档</span>
-              </button>
-              <button class="tree-menu-item" @click="handleCreateDoc">
-                <Icon icon="mdi:language-markdown" />
-                <span>新建Markdown文档</span>
+              <button class="tree-menu-item" @click="handleOpenCreateModal">
+                <Icon icon="mdi:plus-circle" />
+                <span>新建...</span>
               </button>
               <button class="tree-menu-item" @click="handleImportFile">
                 <Icon icon="mdi:file-import" />
@@ -77,9 +69,7 @@
         :expanded-keys="expandedKeys"
         @select="(node, type) => $emit('select', node, type)"
         @toggle="(id) => $emit('toggle', id)"
-        @create-group="(id) => $emit('create-group', id)"
-        @create-doc="(id) => $emit('create-doc', id)"
-        @create-rich-doc="(id) => $emit('create-rich-doc', id)"
+        @open-create-modal="(payload) => $emit('open-create-modal', payload)"
         @import-file="(id) => $emit('import-file', id)"
         @batch-import="(id) => $emit('batch-import', id)"
         @rename="(node, type) => $emit('rename', node, type)"
@@ -123,9 +113,7 @@ const props = defineProps({
 const emit = defineEmits([
   'select',
   'toggle',
-  'create-group',
-  'create-doc',
-  'create-rich-doc',
+  'open-create-modal',
   'import-file',
   'batch-import',
   'rename',
@@ -181,9 +169,9 @@ const handleClick = () => emit('select', props.node, nodeType.value);
 const handleToggle = () => emit('toggle', props.node.id);
 
 // 菜单操作
-const handleCreateGroup = handleMenuAction(() => emit('create-group', props.node.id));
-const handleCreateDoc = handleMenuAction(() => emit('create-doc', props.node.id));
-const handleCreateRichDoc = handleMenuAction(() => emit('create-rich-doc', props.node.id));
+const handleOpenCreateModal = handleMenuAction(() => 
+  emit('open-create-modal', { parentId: props.node.id, parentName: props.node.name })
+);
 const handleImportFile = handleMenuAction(() => emit('import-file', props.node.id));
 const handleBatchImport = handleMenuAction(() => emit('batch-import', props.node.id));
 const handleRename = handleMenuAction(() => emit('rename', props.node, nodeType.value));
@@ -400,5 +388,3 @@ const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.
   }
 }
 </style>
-
-
