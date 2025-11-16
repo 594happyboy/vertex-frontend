@@ -35,13 +35,9 @@
                 <Icon icon="mdi:plus-circle" />
                 <span>新建...</span>
               </button>
-              <button class="tree-menu-item" @click="handleImportFile">
+              <button class="tree-menu-item" @click="handleOpenImportModal">
                 <Icon icon="mdi:file-import" />
-                <span>导入文档</span>
-              </button>
-              <button class="tree-menu-item" @click="handleBatchImport">
-                <Icon icon="mdi:folder-zip" />
-                <span>批量导入</span>
+                <span>导入...</span>
               </button>
               <div class="tree-menu-divider"></div>
             </template>
@@ -70,8 +66,7 @@
         @select="(node, type) => $emit('select', node, type)"
         @toggle="(id) => $emit('toggle', id)"
         @open-create-modal="(payload) => $emit('open-create-modal', payload)"
-        @import-file="(id) => $emit('import-file', id)"
-        @batch-import="(id) => $emit('batch-import', id)"
+        @open-import-modal="(payload) => $emit('open-import-modal', payload)"
         @rename="(node, type) => $emit('rename', node, type)"
         @delete="(node, type) => $emit('delete', node, type)"
       />
@@ -114,8 +109,7 @@ const emit = defineEmits([
   'select',
   'toggle',
   'open-create-modal',
-  'import-file',
-  'batch-import',
+  'open-import-modal',
   'rename',
   'delete',
 ]);
@@ -172,8 +166,9 @@ const handleToggle = () => emit('toggle', props.node.id);
 const handleOpenCreateModal = handleMenuAction(() => 
   emit('open-create-modal', { parentId: props.node.id, parentName: props.node.name })
 );
-const handleImportFile = handleMenuAction(() => emit('import-file', props.node.id));
-const handleBatchImport = handleMenuAction(() => emit('batch-import', props.node.id));
+const handleOpenImportModal = handleMenuAction(() => 
+  emit('open-import-modal', { parentId: props.node.id, parentName: props.node.name })
+);
 const handleRename = handleMenuAction(() => emit('rename', props.node, nodeType.value));
 const handleDelete = handleMenuAction(() => emit('delete', props.node, nodeType.value));
 </script>

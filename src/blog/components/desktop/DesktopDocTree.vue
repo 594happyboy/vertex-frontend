@@ -62,13 +62,9 @@
                       <Icon icon="mdi:plus-circle" />
                       <span>新建...</span>
                     </button>
-                    <button class="tree-menu-item" @click="handleRootImportFile">
+                    <button class="tree-menu-item" @click="handleRootOpenImportModal">
                       <Icon icon="mdi:file-import" />
-                      <span>导入文档</span>
-                    </button>
-                    <button class="tree-menu-item" @click="handleRootBatchImport">
-                      <Icon icon="mdi:folder-zip" />
-                      <span>批量导入</span>
+                      <span>导入...</span>
                     </button>
                   </div>
                 </transition>
@@ -89,8 +85,7 @@
                 @select="handleSelect" 
                 @toggle="handleToggle"
                 @open-create-modal="handleOpenCreateModal"
-                @import-file="handleImportFile"
-                @batch-import="handleBatchImport" 
+                @open-import-modal="handleOpenImportModal"
                 @rename="handleRename" 
                 @delete="handleDelete" 
               />
@@ -140,6 +135,43 @@
         </div>
       </transition>
     </Teleport>
+
+    <Teleport to="body">
+      <transition name="create-modal-fade">
+        <div
+          v-if="showImportModal"
+          class="create-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          @click="closeImportModal"
+        >
+          <div class="create-modal" @click.stop>
+            <div class="create-modal__header">
+              <div>
+                <p class="create-modal__eyebrow">导入方式</p>
+                <h3 class="create-modal__title">{{ importModalTitle }}</h3>
+                <p class="create-modal__subtitle">{{ importModalSubtitle }}</p>
+              </div>
+              <button class="create-modal__close" type="button" @click="closeImportModal">
+                <Icon icon="mdi:close" />
+              </button>
+            </div>
+            <div class="create-modal__list">
+              <button
+                v-for="option in importOptions"
+                :key="option.id"
+                type="button"
+                class="create-modal__item"
+                @click="handleImportOption(option.action)"
+              >
+                <div class="create-modal__item-title">{{ option.title }}</div>
+                <p class="create-modal__item-desc">{{ option.description }}</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
@@ -170,6 +202,11 @@ const uploading = ref(false);
 const searchKeyword = ref('');
 const showCreateModal = ref(false);
 const createModalContext = ref({
+  parentId: null,
+  parentName: '全局文档',
+});
+const showImportModal = ref(false);
+const importModalContext = ref({
   parentId: null,
   parentName: '全局文档',
 });
@@ -224,6 +261,37 @@ const createOptions = computed(() => {
   ];
 });
 
+const importModalTitle = computed(() =>
+  importModalContext.value.parentId
+    ? `导入到「${importModalContext.value.parentName}」`
+    : '导入到根目录'
+);
+const importModalSubtitle = computed(() =>
+  importModalContext.value.parentId
+    ? '将现有内容归档到该分组，保持分类有序'
+    : '导入为顶层文档，稍后可以再分组'
+);
+const importOptions = computed(() => {
+  const parentId = importModalContext.value.parentId;
+  const parentName = importModalContext.value.parentName;
+  const target = parentId ? `「${parentName}」` : '根目录';
+
+  return [
+    {
+      id: 'single-import',
+      title: '导入单个文档',
+      description: `支持 Markdown/PDF/TXT，文件将直接进入${target}`,
+      action: () => handleImportFile(parentId),
+    },
+    {
+      id: 'batch-import',
+      title: '批量导入',
+      description: '上传zip压缩包一次导入多篇文档，保留原有层级结构',
+      action: () => handleBatchImport(parentId),
+    },
+  ];
+});
+
 const tree = computed(() => {
   return isSearching.value 
     ? filterTree(treeStore.tree, normalizedKeyword.value, expandedKeys.value, treeStore.expandNode)
@@ -238,8 +306,7 @@ const expandedKeys = computed(() => treeStore.expandedKeys);
 
 // ===== 根目录菜单操作 =====
 const handleRootOpenCreateModal = handleRootMenuAction(() => openCreateModal());
-const handleRootImportFile = handleRootMenuAction(() => handleImportFile(null));
-const handleRootBatchImport = handleRootMenuAction(() => handleBatchImport(null));
+const handleRootOpenImportModal = handleRootMenuAction(() => openImportModal());
 
 // ===== 搜索功能 =====
 const clearSearch = () => searchKeyword.value = '';
@@ -281,6 +348,30 @@ function closeCreateModal() {
 
 function handleCreateOption(action) {
   closeCreateModal();
+  action?.();
+}
+
+function openImportModal(context = { parentId: null, parentName: '全局文档' }) {
+  importModalContext.value = {
+    parentId: context?.parentId ?? null,
+    parentName: context?.parentName || '全局文档',
+  };
+  showImportModal.value = true;
+}
+
+function handleOpenImportModal(payload) {
+  openImportModal({
+    parentId: payload?.parentId ?? null,
+    parentName: payload?.parentName || '全局文档',
+  });
+}
+
+function closeImportModal() {
+  showImportModal.value = false;
+}
+
+function handleImportOption(action) {
+  closeImportModal();
   action?.();
 }
 
