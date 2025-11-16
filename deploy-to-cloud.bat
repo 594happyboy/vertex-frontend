@@ -1,116 +1,128 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul
-echo ========================================
-echo    前端项目一键部署脚本
-echo ========================================
-echo.
+
+call :log "========================================"
+call :log "   前端项目一键部署脚本"
+call :log "========================================"
+call :log ""
 
 rem ===== 服务器和 SSH 配置（按需修改） =====
 set "SERVER_USER=root"
 set "SERVER_IP=142.171.169.111"
 set "REMOTE_DIR=/opt/vertex-frontend"
-rem Windows 本机 SSH 私钥路径，需与 ubuntu-ssh-setup.md 中生成的一致
-set "SSH_KEY=C:\Users\64227\.ssh\id_ed25519"
+set "ARCHIVE_NAME=dist.tar.gz"
+rem Windows 本机 SSH 私钥路径，默认指向当前用户目录，可通过脚本第一个参数覆盖
+set "SSH_KEY=%USERPROFILE%\.ssh\id_ed25519"
+if not "%~1"=="" set "SSH_KEY=%~1"
 
-rem 检查 SSH 客户端和密钥是否存在
-where ssh >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [错误] 未找到 ssh，请在 Windows 中启用 OpenSSH 客户端
-    pause
-    exit /b 1
-)
-where scp >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [错误] 未找到 scp，请在 Windows 中启用 OpenSSH 客户端
-    pause
-    exit /b 1
-)
+rem 检查依赖命令
+call :require_command ssh "未找到 ssh，请在 Windows 中启用 OpenSSH 客户端"
+call :require_command scp "未找到 scp，请在 Windows 中启用 OpenSSH 客户端"
+call :require_command tar "未找到 tar，请安装 GNU tar 或启用 Windows 11 内置 tar"
 
 if not exist "%SSH_KEY%" (
-    echo [错误] 找不到 SSH 私钥文件: "%SSH_KEY%"
-    echo 请先按照 ubuntu-ssh-setup.md 配置密钥登录
-    pause
-    exit /b 1
+    call :log "[错误] 找不到 SSH 私钥文件: \"%SSH_KEY%\""
+    call :log "请先按照 ubuntu-ssh-setup.md 配置密钥登录，或在运行脚本时传入自定义密钥路径。"
+    goto :abort
 )
 
-echo [1/3] 开始构建生产版本...
+call :log "[1/3] 开始构建生产版本..."
 call npm run build
 if %errorlevel% neq 0 (
-    echo.
-    echo ❌ 构建失败！请检查错误信息。
-    pause
-    exit /b 1
+    call :log ""
+    call :log "❌ 构建失败！请检查错误信息。"
+    goto :abort
 )
-echo ✅ 构建完成！
-echo.
+call :log "✅ 构建完成！"
+call :log ""
 
-echo [1.5/3] 打包 dist 文件夹...
-if exist dist.tar.gz del /f /q dist.tar.gz
-tar -czf dist.tar.gz dist
+call :log "[1.5/3] 打包 dist 文件夹..."
+if exist "%ARCHIVE_NAME%" del /f /q "%ARCHIVE_NAME%"
+tar -czf "%ARCHIVE_NAME%" dist
 if %errorlevel% neq 0 (
-    echo.
-    echo ❌ 打包失败！请确认本机已安装 tar 并且命令可用。
-    pause
-    exit /b 1
+    call :log ""
+    call :log "❌ 打包失败！请确认本机已安装 tar 并且命令可用。"
+    goto :abort
 )
-echo ✅ 打包完成！
-echo.
+call :log "✅ 打包完成！"
+call :log ""
 
-echo [2/3] 准备上传到服务器...
-echo 目标服务器: %SERVER_IP%
-echo 目标路径: /opt/vertex-frontend/
-echo.
+call :log "[2/3] 准备上传到服务器..."
+call :log "目标服务器: %SERVER_IP%"
+call :log "目标路径: %REMOTE_DIR%/"
+call :log ""
 
-echo [3/3] 开始上传 dist.tar.gz ...
-echo 检查远程目录是否存在...
+call :log "[3/3] 开始上传 %ARCHIVE_NAME% ..."
+call :log "检查/创建远程目录..."
 ssh -i "%SSH_KEY%" %SERVER_USER%@%SERVER_IP% "mkdir -p %REMOTE_DIR%/"
 if %errorlevel% neq 0 (
-    echo.
-    echo ❌ 创建远程目录失败！请检查：
-    echo    1. SSH 是否配置正确
-    echo    2. 目标路径是否有写入权限
-    echo    3. 服务器状态是否正常
-    pause
-    exit /b 1
+    call :log ""
+    call :log "❌ 创建远程目录失败！请检查 SSH 配置与权限。"
+    goto :abort
 )
-echo 清理远程旧文件...
-ssh -i "%SSH_KEY%" %SERVER_USER%@%SERVER_IP% "rm -rf %REMOTE_DIR%/dist %REMOTE_DIR%/dist.tar.gz"
+call :log "✅ 远程目录已准备。"
+
+call :log "清理远程旧文件..."
+ssh -i "%SSH_KEY%" %SERVER_USER%@%SERVER_IP% "rm -rf %REMOTE_DIR%/dist %REMOTE_DIR%/%ARCHIVE_NAME%"
 if %errorlevel% neq 0 (
-    echo.
-    echo ❌ 远程清理失败！请检查 SSH 配置与权限。
-    pause
-    exit /b 1
+    call :log ""
+    call :log "❌ 远程清理失败！请检查 SSH 配置与权限。"
+    goto :abort
 )
-echo 请在提示时输入服务器密码: 
-scp -i "%SSH_KEY%" dist.tar.gz %SERVER_USER%@%SERVER_IP%:%REMOTE_DIR%/
+call :log "✅ 远程旧文件已清空。"
+
+call :log "正在通过 SSH 密钥上传压缩包..."
+scp -i "%SSH_KEY%" "%ARCHIVE_NAME%" %SERVER_USER%@%SERVER_IP%:%REMOTE_DIR%/
 if %errorlevel% neq 0 (
-    echo.
-    echo ❌ 上传失败！请检查：
-    echo    1. 服务器 IP 和密码是否正确
-    echo    2. 目标路径是否存在
-    echo    3. 是否安装了 OpenSSH 客户端
-    pause
-    exit /b 1
+    call :log ""
+    call :log "❌ 上传失败！请检查服务器参数与网络。"
+    goto :abort
 )
+call :log "✅ 上传完成！"
 
-echo 解压远程压缩包...
-ssh -i "%SSH_KEY%" %SERVER_USER%@%SERVER_IP% "cd %REMOTE_DIR%/ && tar -xzf dist.tar.gz && rm -f dist.tar.gz"
+call :log "解压远程压缩包..."
+ssh -i "%SSH_KEY%" %SERVER_USER%@%SERVER_IP% "cd %REMOTE_DIR%/ && tar -xzf %ARCHIVE_NAME% && rm -f %ARCHIVE_NAME%"
 if %errorlevel% neq 0 (
-    echo.
-    echo ❌ 解压失败！请检查远程是否安装 tar 或路径权限。
-    pause
-    exit /b 1
+    call :log ""
+    call :log "❌ 解压失败！请检查远程 tar 与权限设置。"
+    goto :abort
 )
+call :log "✅ 远程解压完成。"
 
-echo 清理本地打包文件...
-del /f /q dist.tar.gz >nul 2>&1
+call :log "清理本地打包文件..."
+del /f /q "%ARCHIVE_NAME%" >nul 2>&1
+call :log "✅ 本地临时文件已清理。"
+call :log ""
 
-
-echo.
-echo ========================================
-echo ✅ 部署成功！
-echo ========================================
-echo 访问地址: http://%SERVER_IP%
-echo.
+call :log "========================================"
+call :log "✅ 部署成功！"
+call :log "========================================"
+call :log "访问地址: http://%SERVER_IP%"
+call :log ""
 pause
+goto :EOF
 
+:log
+setlocal EnableDelayedExpansion
+set "msg=%~1"
+if defined msg (
+    echo(!msg!
+) else (
+    echo.
+)
+endlocal
+goto :EOF
+
+:require_command
+where %~1 >nul 2>&1
+if %errorlevel% neq 0 (
+    call :log "[错误] %~2"
+    goto :abort
+)
+goto :EOF
+
+:abort
+call :log ""
+pause
+exit /b 1
