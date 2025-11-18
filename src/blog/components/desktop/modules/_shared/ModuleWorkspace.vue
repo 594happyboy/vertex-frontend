@@ -1,12 +1,12 @@
 <template>
-  <div class="desktop-doc-workspace">
+  <div class="module-workspace">
     <div v-if="!currentDoc" class="empty-state">
       <div class="empty-state__decor"></div>
       <div class="empty-state__icon">
         <Icon icon="mdi:file-document-multiple-outline" />
       </div>
-      <h3>选择或创建一个文档</h3>
-      <p>从左侧知识目录中挑选内容，或点击"新建文档"开始创作。</p>
+      <h3>{{ emptyTitle }}</h3>
+      <p>{{ emptyDescription }}</p>
     </div>
 
     <div v-else class="workspace-content">
@@ -33,18 +33,30 @@
 <script setup>
 import { computed } from 'vue';
 import { Icon } from '@iconify/vue';
-import { useDocStore } from '../../stores/doc';
-import MdContainer from '../shared/MdContainer.vue';
-import HtmlContainer from '../shared/HtmlContainer.vue';
-import PdfViewer from '../pdf/PdfViewer.vue';
+import { useDocStore } from '../../../../stores/doc';
+import MdContainer from '../../../shared/MdContainer.vue';
+import HtmlContainer from '../../../shared/HtmlContainer.vue';
+import PdfViewer from '../../../pdf/PdfViewer.vue';
 
 const docStore = useDocStore();
 
 const currentDoc = computed(() => docStore.currentDoc);
+const props = defineProps({
+  emptyTitle: {
+    type: String,
+    default: '选择或创建一个文档',
+  },
+  emptyDescription: {
+    type: String,
+    default: '从左侧知识目录中挑选内容，或点击"新建文档"开始创作。',
+  },
+});
+
+const { emptyTitle, emptyDescription } = props;
 </script>
 
 <style scoped>
-.desktop-doc-workspace {
+.module-workspace {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -149,4 +161,3 @@ const currentDoc = computed(() => docStore.currentDoc);
   color: var(--color-text-tertiary);
 }
 </style>
-

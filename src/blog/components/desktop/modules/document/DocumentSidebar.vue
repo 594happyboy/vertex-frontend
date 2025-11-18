@@ -1,5 +1,5 @@
 <template>
-  <div class="desktop-doc-tree">
+  <div class="document-sidebar">
     <div class="tree-list-wrapper">
       <!-- 顶部操作区：搜索框 -->
       <div class="tree-actions">
@@ -178,16 +178,16 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Icon } from '@iconify/vue';
-import { useTreeStore } from '../../stores/tree';
-import { useDocStore } from '../../stores/doc';
-import { useUiStore } from '../../stores/ui';
-import { batchUploadDocuments } from '../../api/document';
-import { useTreeMenu } from '../../composables/useTreeMenu';
-import TreeNode from '../TreeNode.vue';
-import { FILE_SIZE_LIMITS, DOCUMENT_ACCEPT } from '../../constants';
-import { createTextFile, extractTitle, validateBatchFile } from '../../utils/fileHelpers';
-import { formatBatchUploadResult } from '../../utils/uiHelpers';
-import { filterTree } from '../../utils/treeHelpers';
+import { useTreeStore } from '../../../../stores/tree';
+import { useDocStore } from '../../../../stores/doc';
+import { useUiStore } from '../../../../stores/ui';
+import { batchUploadDocuments } from '../../../../api/document';
+import { useTreeMenu } from '../../../../composables/useTreeMenu';
+import TreeNode from '../../../TreeNode.vue';
+import { FILE_SIZE_LIMITS, DOCUMENT_ACCEPT } from '../../../../constants';
+import { createTextFile, extractTitle, validateBatchFile } from '../../../../utils/fileHelpers';
+import { formatBatchUploadResult } from '../../../../utils/uiHelpers';
+import { filterTree } from '../../../../utils/treeHelpers';
 
 // Stores
 const treeStore = useTreeStore();
@@ -548,9 +548,9 @@ async function handleBatchFileSelect(event) {
 </script>
 
 <style scoped>
-@import '../../styles/tree-menu.css';
+@import '../../../../styles/tree-menu.css';
 
-.desktop-doc-tree {
+.document-sidebar {
   position: relative;
   height: 100%;
   display: flex;
