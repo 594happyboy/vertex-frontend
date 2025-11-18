@@ -135,6 +135,7 @@ import DesktopDocTree from '../../components/desktop/DesktopDocTree.vue';
 import DesktopDocWorkspace from '../../components/desktop/DesktopDocWorkspace.vue';
 import DesktopSidebarHandle from '../../components/desktop/DesktopSidebarHandle.vue';
 import InfiniteFooterBar from '../../components/shared/InfiniteFooterBar.vue';
+import { SYNC_STATUS } from '../../constants';
 import { formatDate } from '@/utils/formatters';
 import { fetchDocumentsService } from '../../services/documentService';
 import { useInfiniteLoader } from '@/composables/useInfiniteLoader';
@@ -172,6 +173,7 @@ const latestHasMore = ref(false);
 const latestNextCursor = ref(null);
 const latestTotal = ref(0);
 const latestListRef = ref(null);
+const latestBarState = ref('idle');
 
 function toggleSidebar() {
   uiStore.toggleSidebar();
@@ -191,13 +193,28 @@ async function selectLatestDoc(docId) {
   }
 }
 
+function replaceLatestDocs(items = []) {
+  latestDocs.value.splice(0, latestDocs.value.length, ...items);
+}
+
+function appendLatestDocs(items = []) {
+  if (!items.length) return;
+  items.forEach((item) => {
+    const existingIdx = latestDocs.value.findIndex((doc) => doc.id === item.id);
+    if (existingIdx !== -1) {
+      latestDocs.value.splice(existingIdx, 1);
+    }
+    latestDocs.value.push(item);
+  });
+}
+
 async function fetchLatestDocs({ reset = false } = {}) {
   if (latestLoading.value) return;
   latestLoading.value = true;
   latestError.value = '';
 
   if (reset) {
-    latestDocs.value = [];
+    replaceLatestDocs();
     latestNextCursor.value = null;
     latestHasMore.value = false;
   }
@@ -217,9 +234,9 @@ async function fetchLatestDocs({ reset = false } = {}) {
     const items = result.items || [];
 
     if (reset) {
-      latestDocs.value = items;
+      replaceLatestDocs(items);
     } else {
-      latestDocs.value = [...latestDocs.value, ...items];
+      appendLatestDocs(items);
     }
 
     latestNextCursor.value = result.pagination?.nextCursor ?? null;
@@ -243,7 +260,35 @@ function loadMoreLatest() {
   return fetchLatestDocs();
 }
 
-const { sentinelRef: latestSentinelRef, barState: latestBarState, retry: retryLoadMoreLatest } = useInfiniteLoader({
+function promoteLatestDoc(doc) {
+  if (!doc?.id) return;
+
+  const updatedDoc = {
+    ...doc,
+    updatedAt: doc.updatedAt ?? docStore.currentDoc?.updatedAt ?? new Date().toISOString(),
+  };
+
+  const docs = latestDocs.value;
+  const previousLength = docs.length;
+  const existingIdx = docs.findIndex((item) => item.id === updatedDoc.id);
+  const existed = existingIdx !== -1;
+
+  if (existed) {
+    docs.splice(existingIdx, 1);
+  } else if (latestTotal.value !== null && latestTotal.value !== undefined) {
+    latestTotal.value += 1;
+  } else {
+    latestTotal.value = previousLength + 1;
+  }
+
+  docs.unshift(updatedDoc);
+
+  if (!existed && previousLength > 0 && docs.length > previousLength && latestHasMore.value) {
+    docs.pop();
+  }
+}
+
+const { sentinelRef: latestSentinelRef, barState: latestBarStateFromLoader, retry: retryLoadMoreLatest } = useInfiniteLoader({
   containerRef: latestListRef,
   hasMore: latestHasMore,
   loading: latestLoading,
@@ -251,9 +296,26 @@ const { sentinelRef: latestSentinelRef, barState: latestBarState, retry: retryLo
   loadMore: loadMoreLatest,
 });
 
+watch(
+  () => latestBarStateFromLoader.value,
+  (state) => {
+    latestBarState.value = state;
+  },
+  { immediate: true }
+);
+
 function retryLatestLoad() {
   retryLoadMoreLatest();
 }
+
+watch(
+  () => docStore.syncStatus,
+  (status, prev) => {
+    if (status === SYNC_STATUS.SYNCED && prev !== SYNC_STATUS.SYNCED && docStore.currentDoc) {
+      promoteLatestDoc(docStore.currentDoc);
+    }
+  }
+);
 
 // 处理窗口大小变化
 function handleWindowResize() {
