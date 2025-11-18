@@ -72,7 +72,7 @@
                   </button>
                 </template>
 
-                <!-- 触发自动加载的占位元素，配合 useInfiniteScroll -->
+                <InfiniteFooterBar :state="latestBarState" @retry="retryLatestLoad" />
                 <div ref="latestSentinelRef" class="latest-sentinel" />
               </div>
 
@@ -134,9 +134,10 @@ import { useDocStore } from '../../stores/doc';
 import DesktopDocTree from '../../components/desktop/DesktopDocTree.vue';
 import DesktopDocWorkspace from '../../components/desktop/DesktopDocWorkspace.vue';
 import DesktopSidebarHandle from '../../components/desktop/DesktopSidebarHandle.vue';
+import InfiniteFooterBar from '../../components/shared/InfiniteFooterBar.vue';
 import { formatDate } from '@/utils/formatters';
 import { fetchDocumentsService } from '../../services/documentService';
-import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
+import { useInfiniteLoader } from '@/composables/useInfiniteLoader';
 
 const uiStore = useUiStore();
 const treeStore = useTreeStore();
@@ -227,28 +228,32 @@ async function fetchLatestDocs({ reset = false } = {}) {
   } catch (error) {
     console.error('Failed to fetch latest documents:', error);
     latestError.value = error.message || '加载最新文档失败';
-    uiStore.showError('加载失败，请稍后重试');
+    throw error;
   } finally {
     latestLoading.value = false;
   }
 }
 
 function refreshLatestDocs() {
-  fetchLatestDocs({ reset: true });
+  fetchLatestDocs({ reset: true }).catch(() => {});
 }
 
 function loadMoreLatest() {
   if (!latestHasMore.value || latestLoading.value) return;
-  fetchLatestDocs();
+  return fetchLatestDocs();
 }
 
-const { sentinelRef: latestSentinelRef } = useInfiniteScroll({
+const { sentinelRef: latestSentinelRef, barState: latestBarState, retry: retryLoadMoreLatest } = useInfiniteLoader({
   containerRef: latestListRef,
   hasMore: latestHasMore,
   loading: latestLoading,
   enabled: computed(() => activeModule.value === 'latest'),
-  onLoadMore: loadMoreLatest,
+  loadMore: loadMoreLatest,
 });
+
+function retryLatestLoad() {
+  retryLoadMoreLatest();
+}
 
 // 处理窗口大小变化
 function handleWindowResize() {
