@@ -1,17 +1,11 @@
 <template>
   <div class="module-shell">
     <component v-if="currentModuleComponent" :is="currentModuleComponent" ref="moduleRef" />
-    <div v-else class="module-placeholder">
-      <Icon :icon="moduleConfig?.icon || 'mdi:file-outline'" class="module-placeholder__icon" />
-      <h3>{{ moduleConfig?.label || '未知' }}模块建设中</h3>
-      <p>敬请期待，更多能力即将上线。</p>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, shallowRef, watch, onMounted } from 'vue';
-import { Icon } from '@iconify/vue';
 
 const props = defineProps({
   moduleConfig: {
@@ -62,40 +56,5 @@ defineExpose({
   display: flex;
   flex-direction: column;
   position: relative;
-}
-
-.module-placeholder {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: var(--color-text-secondary);
-  background: var(--color-bg-primary);
-  text-align: center;
-}
-
-.module-placeholder__icon {
-  font-size: 48px;
-  color: var(--color-text-primary);
-}
-
-.module-placeholder h3 {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.module-placeholder p {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-/* 暗色主题 */
-[data-theme='dark'] .module-placeholder {
-  background: #0f172a;
 }
 </style>
