@@ -14,7 +14,7 @@
       <div class="latest-root__meta">共 {{ total }} 篇</div>
     </div>
 
-    <div class="latest-doc-list" data-scroll ref="listRef">
+    <div class="latest-doc-list" data-scroll :ref="listRef">
       <div v-if="loading && !docs.length" class="latest-status">
         <Icon icon="mdi:loading" class="spin" />
         <span>正在加载最新内容...</span>
@@ -53,7 +53,7 @@
       </template>
 
       <InfiniteFooterBar :state="barState" @retry="$emit('retry')" />
-      <div ref="sentinelRef" class="latest-sentinel" />
+      <div :ref="sentinelRef" class="latest-sentinel" />
     </div>
   </aside>
 </template>
@@ -97,11 +97,11 @@ defineProps({
     default: 280,
   },
   listRef: {
-    type: Object,
+    type: [Function, Object],
     default: null,
   },
   sentinelRef: {
-    type: Object,
+    type: [Function, Object],
     default: null,
   },
 });

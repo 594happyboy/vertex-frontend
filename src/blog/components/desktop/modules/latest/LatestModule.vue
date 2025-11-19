@@ -9,8 +9,8 @@
       :bar-state="latestBarState"
       :collapsed="sidebarCollapsed"
       :width="SIDEBAR_WIDTH"
-      :list-ref="latestListRef"
-      :sentinel-ref="latestSentinelRef"
+      :list-ref="bindLatestListRef"
+      :sentinel-ref="bindLatestSentinelRef"
       @select="selectLatestDoc"
       @refresh="refreshLatestDocs"
       @retry="retryLatestLoad"
@@ -57,6 +57,14 @@ const {
   retryLatestLoad,
   fetchLatestDocs,
 } = useLatestModule();
+
+const bindLatestListRef = (el) => {
+  latestListRef.value = el;
+};
+
+const bindLatestSentinelRef = (el) => {
+  latestSentinelRef.value = el;
+};
 
 const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
 

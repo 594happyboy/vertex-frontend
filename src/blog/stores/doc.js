@@ -9,6 +9,19 @@ import {
 } from '../api/document';
 import { getAccessToken } from '@/api/request';
 import { FILE_TYPE_CONFIG, AUTO_SAVE_DEBOUNCE, SYNC_STATUS } from '../constants';
+import { useLatestDocumentsService } from '@/blog/composables/modules/latest/useLatestDocumentsService';
+
+const latestDocumentsService = useLatestDocumentsService();
+
+async function notifyLatestDocuments(doc) {
+  if (!doc?.id) return;
+  try {
+    await latestDocumentsService.ensureInitialized();
+  } catch (error) {
+    console.error('Failed to initialize latest documents service:', error);
+  }
+  latestDocumentsService.promoteDoc({ ...doc });
+}
 
 export const useDocStore = defineStore('doc', {
   state: () => ({
@@ -123,6 +136,7 @@ export const useDocStore = defineStore('doc', {
         this.saveError = null;
         this.lastSavedAt = null;
 
+        notifyLatestDocuments(this.currentDoc);
         return data;
       } catch (error) {
         console.error('Failed to create document:', error);
@@ -190,6 +204,7 @@ export const useDocStore = defineStore('doc', {
         }
 
         this.dirty = false;
+        notifyLatestDocuments(this.currentDoc);
         return this.currentDoc;
       } catch (error) {
         console.error('Failed to save document:', error);
@@ -276,6 +291,8 @@ export const useDocStore = defineStore('doc', {
         this.dirty = false;
         this.syncStatus = SYNC_STATUS.SYNCED;
         this.lastSavedAt = new Date();
+
+        notifyLatestDocuments(this.currentDoc);
 
         // 如果标题更新了，刷新目录树
         if (titleChanged) {

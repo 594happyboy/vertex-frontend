@@ -20,6 +20,7 @@
     "@tiptap/starter-kit": "^2.0.0",
     "@tiptap/vue-3": "^2.0.0",
     "@iconify/vue": "^5.0.0",
+    "@iconify-json/mdi": "^1.2.0",
     "@vueuse/core": "^14.0.0",
     "axios": "^1.12.2",
     "dayjs": "^1.11.18",

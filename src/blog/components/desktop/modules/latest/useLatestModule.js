@@ -3,28 +3,29 @@
  * 管理最新文档列表的加载、分页、更新等功能
  */
 
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useDocStore } from '../../../../stores/doc';
 import { useTreeStore } from '../../../../stores/tree';
 import { useUiStore } from '../../../../stores/ui';
-import { fetchDocumentsService } from '../../../../services/documentService';
 import { useInfiniteLoader } from '@/composables/useInfiniteLoader';
-import { SYNC_STATUS } from '../../../../constants';
-
-const LATEST_PAGE_SIZE = 20;
+import { useLatestDocumentsService } from '@/blog/composables/modules/latest/useLatestDocumentsService';
 
 export function useLatestModule() {
   const docStore = useDocStore();
   const treeStore = useTreeStore();
   const uiStore = useUiStore();
-
-  // 文档列表状态
-  const latestDocs = ref([]);
-  const latestLoading = ref(false);
-  const latestError = ref('');
-  const latestHasMore = ref(false);
-  const latestNextCursor = ref(null);
-  const latestTotal = ref(0);
+  const {
+    docs: latestDocs,
+    loading: latestLoading,
+    error: latestError,
+    total: latestTotal,
+    hasMore: latestHasMore,
+    fetchLatestDocs,
+    refreshLatestDocs: refreshLatestDocsFromService,
+    loadMoreLatest: loadMoreLatestFromService,
+    promoteDoc,
+    ensureInitialized,
+  } = useLatestDocumentsService();
 
   // UI 引用
   const latestListRef = ref(null);
@@ -47,118 +48,22 @@ export function useLatestModule() {
   }
 
   /**
-   * 替换文档列表
-   */
-  function replaceLatestDocs(items = []) {
-    latestDocs.value.splice(0, latestDocs.value.length, ...items);
-  }
-
-  /**
-   * 追加文档列表
-   */
-  function appendLatestDocs(items = []) {
-    if (!items.length) return;
-    items.forEach((item) => {
-      const existingIdx = latestDocs.value.findIndex((doc) => doc.id === item.id);
-      if (existingIdx !== -1) {
-        latestDocs.value.splice(existingIdx, 1);
-      }
-      latestDocs.value.push(item);
-    });
-  }
-
-  /**
-   * 获取最新文档列表
-   */
-  async function fetchLatestDocs({ reset = false } = {}) {
-    if (latestLoading.value) return;
-    latestLoading.value = true;
-    latestError.value = '';
-
-    if (reset) {
-      replaceLatestDocs();
-      latestNextCursor.value = null;
-      latestHasMore.value = false;
-    }
-
-    try {
-      const params = {
-        limit: LATEST_PAGE_SIZE,
-        sortBy: 'updatedAt',
-        order: 'desc',
-      };
-
-      if (!reset && latestNextCursor.value) {
-        params.cursor = latestNextCursor.value;
-      }
-
-      const result = await fetchDocumentsService(params);
-      const items = result.items || [];
-
-      if (reset) {
-        replaceLatestDocs(items);
-      } else {
-        appendLatestDocs(items);
-      }
-
-      latestNextCursor.value = result.pagination?.nextCursor ?? null;
-      latestHasMore.value = result.pagination?.hasMore ?? false;
-      latestTotal.value = result.pagination?.total ?? latestDocs.value.length;
-    } catch (error) {
-      console.error('Failed to fetch latest documents:', error);
-      latestError.value = error.message || '加载最新文档失败';
-      throw error;
-    } finally {
-      latestLoading.value = false;
-    }
-  }
-
-  /**
    * 刷新最新文档列表
    */
   function refreshLatestDocs() {
-    fetchLatestDocs({ reset: true }).catch(() => {});
+    refreshLatestDocsFromService().catch(() => {});
   }
 
   /**
    * 加载更多最新文档
    */
   function loadMoreLatest() {
-    if (!latestHasMore.value || latestLoading.value) return;
-    return fetchLatestDocs();
+    return loadMoreLatestFromService();
   }
 
   /**
    * 提升文档到列表顶部（保存后触发）
    */
-  function promoteLatestDoc(doc) {
-    if (!doc?.id) return;
-
-    const updatedDoc = {
-      ...doc,
-      updatedAt: doc.updatedAt ?? docStore.currentDoc?.updatedAt ?? new Date().toISOString(),
-    };
-
-    const docs = latestDocs.value;
-    const previousLength = docs.length;
-    const existingIdx = docs.findIndex((item) => item.id === updatedDoc.id);
-    const existed = existingIdx !== -1;
-
-    if (existed) {
-      docs.splice(existingIdx, 1);
-    } else if (latestTotal.value !== null && latestTotal.value !== undefined) {
-      latestTotal.value += 1;
-    } else {
-      latestTotal.value = previousLength + 1;
-    }
-
-    docs.unshift(updatedDoc);
-
-    if (!existed && previousLength > 0 && docs.length > previousLength && latestHasMore.value) {
-      docs.pop();
-    }
-  }
-
   /**
    * 无限滚动加载器
    */
@@ -188,17 +93,9 @@ export function useLatestModule() {
     retryLoadMoreLatest();
   }
 
-  /**
-   * 监听文档同步状态，保存后提升文档
-   */
-  watch(
-    () => docStore.syncStatus,
-    (status, prev) => {
-      if (status === SYNC_STATUS.SYNCED && prev !== SYNC_STATUS.SYNCED && docStore.currentDoc) {
-        promoteLatestDoc(docStore.currentDoc);
-      }
-    }
-  );
+  onMounted(() => {
+    ensureInitialized().catch(() => {});
+  });
 
   return {
     // 状态
