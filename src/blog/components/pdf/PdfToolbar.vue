@@ -92,11 +92,6 @@
         </button>
       </div>
 
-      <!-- 下载按钮（PC端显示） -->
-      <button v-if="!isMobile" class="btn-download" @click="$emit('download')" title="下载 PDF">
-        <Icon icon="mdi:download" />
-        <span>下载</span>
-      </button>
     </div>
   </div>
 </template>
@@ -157,7 +152,6 @@ defineEmits([
   'update:page-input',
   'zoom-in',
   'zoom-out',
-  'download',
 ]);
 
 const isFirstPage = computed(() => props.currentPage <= 1);
@@ -431,44 +425,5 @@ const scalePercent = computed(() => Math.round(props.scale * 100));
   }
 }
 
-.btn-download {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 14px;
-  border: 1px solid rgba(196, 206, 255, 0.78);
-  background: rgba(255, 255, 255, 0.92);
-  color: #1f2a72;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.btn-download :deep(svg) {
-  font-size: 18px;
-}
-
-.btn-download:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 32px -24px rgba(27, 43, 120, 0.55);
-  border-color: rgba(116, 137, 255, 0.6);
-}
-
-@media (max-width: 768px) {
-  .btn-download {
-    padding: 10px 12px;
-    gap: 0;
-  }
-  
-  .btn-download span {
-    display: none;
-  }
-  
-  .btn-download :deep(svg) {
-    font-size: 20px;
-  }
-}
 </style>
 

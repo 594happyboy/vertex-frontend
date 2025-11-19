@@ -20,7 +20,6 @@
       @update:page-input="pageInput = $event"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
-      @download="downloadPdf"
     />
 
     <!-- PDF 内容区 -->
@@ -253,14 +252,6 @@ function zoomOut() {
   scale.value = Math.max(scale.value - PDF_CONFIG.SCALE.STEP, PDF_CONFIG.SCALE.MIN);
 }
 
-/**
- * 下载 PDF
- */
-function downloadPdf() {
-  if (pdfUrl.value) {
-    window.open(pdfUrl.value, '_blank');
-  }
-}
 
 // ==================== 事件处理 ====================
 function onPageRendered(pageNum) {
