@@ -6,6 +6,8 @@ export const useUiStore = defineStore('ui', {
     toasts: [], // 通知消息列表
     dialogs: {}, // 对话框状态
     sidebarCollapsed: false, // 侧边栏是否折叠
+    documentSidebarCollapsed: false, // 知识库模块侧边栏
+    latestSidebarCollapsed: false, // 最新模块侧边栏
     loading: {
       show: false,
       message: '加载中...',
@@ -98,6 +100,24 @@ export const useUiStore = defineStore('ui', {
     // 设置侧边栏状态
     setSidebarCollapsed(collapsed) {
       this.sidebarCollapsed = collapsed;
+    },
+
+    // 知识库模块侧边栏
+    toggleDocumentSidebar() {
+      this.documentSidebarCollapsed = !this.documentSidebarCollapsed;
+    },
+
+    setDocumentSidebarCollapsed(collapsed) {
+      this.documentSidebarCollapsed = collapsed;
+    },
+
+    // 最新模块侧边栏
+    toggleLatestSidebar() {
+      this.latestSidebarCollapsed = !this.latestSidebarCollapsed;
+    },
+
+    setLatestSidebarCollapsed(collapsed) {
+      this.latestSidebarCollapsed = collapsed;
     },
 
     // 显示 Loading 对话框

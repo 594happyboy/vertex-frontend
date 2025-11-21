@@ -66,10 +66,10 @@ const bindLatestSentinelRef = (el) => {
   latestSentinelRef.value = el;
 };
 
-const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
+const sidebarCollapsed = computed(() => uiStore.latestSidebarCollapsed);
 
 function toggleSidebar() {
-  uiStore.toggleSidebar();
+  uiStore.toggleLatestSidebar();
 }
 
 // 组件挂载时加载最新文档

@@ -31,10 +31,10 @@ const SIDEBAR_WIDTH = 280;
 
 const uiStore = useUiStore();
 
-const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
+const sidebarCollapsed = computed(() => uiStore.documentSidebarCollapsed);
 
 function toggleSidebar() {
-  uiStore.toggleSidebar();
+  uiStore.toggleDocumentSidebar();
 }
 </script>
 
