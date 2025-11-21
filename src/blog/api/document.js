@@ -10,6 +10,15 @@ export function getDocuments(params = {}) {
 }
 
 /**
+ * 模糊搜索文档（基于全文索引）
+ * @param {Object} params - { q: string, groupId?, page?, size? }
+ * @returns {Promise<DocumentSearchResponse>}
+ */
+export function searchDocuments(params = {}) {
+  return request.get('/api/documents/search', { params });
+}
+
+/**
  * 获取文档详情
  * @param {number} id
  * @returns {Promise<Object>}

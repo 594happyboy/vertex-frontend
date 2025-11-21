@@ -29,11 +29,11 @@
           <span>{{ error }}</span>
         </div>
 
-        <!-- 搜索无结果 -->
-        <div v-else-if="tree.length === 0 && isSearching" class="tree-status tree-status--no-results">
+        <!-- 空状态 -->
+        <div v-else-if="tree.length === 0" class="tree-status tree-status--no-results">
           <Icon icon="mdi:text-box-search-outline" />
-          <p class="tree-status__text">未找到匹配的文档或分组</p>
-          <p class="tree-status__hint">试试其他搜索关键词</p>
+          <p class="tree-status__text">暂无文档</p>
+          <p class="tree-status__hint">可以通过右上方按钮快速创建或导入</p>
         </div>
 
         <!-- 目录树列表 -->
@@ -89,6 +89,75 @@
                 @rename="handleRename" 
                 @delete="handleDelete" 
               />
+            </div>
+          </div>
+        </div>
+
+        <!-- 搜索结果覆盖层 -->
+        <div v-if="isSearchActive" class="tree-search-overlay">
+          <div class="search-panel">
+            <div class="search-panel__header">
+              <div>
+                <p class="search-panel__eyebrow">全文检索</p>
+                <h4 class="search-panel__title">搜索结果</h4>
+              </div>
+              <button type="button" class="search-panel__close" @click="clearSearch">
+                <Icon icon="mdi:close" />
+              </button>
+            </div>
+
+            <div class="search-panel__body" data-scroll>
+              <div v-if="searchLoading && searchResults.length === 0" class="search-panel__status">
+                <Icon icon="mdi:loading" class="spin" />
+                <p>正在搜索，请稍候...</p>
+              </div>
+              <div v-else-if="searchError" class="search-panel__status search-panel__status--error">
+                <Icon icon="mdi:alert-circle-outline" />
+                <div>
+                  <p>搜索失败：{{ searchError }}</p>
+                  <button class="search-panel__action" type="button" @click="refreshSearch" :disabled="searchLoading">
+                    <Icon icon="mdi:refresh" />
+                    <span>重试</span>
+                  </button>
+                </div>
+              </div>
+              <div v-else-if="!searchLoading && searchResults.length === 0" class="search-panel__status">
+                <Icon icon="mdi:text-box-search-outline" />
+                <p>没有匹配的结果，换个关键词试试</p>
+              </div>
+
+              <ul v-else class="search-result-list">
+                <li
+                  v-for="item in searchResults"
+                  :key="item.id"
+                  class="search-result-item"
+                  @click="handleSearchResultSelect(item)"
+                >
+                  <div class="search-result-item__title">{{ item.title }}</div>
+                  <p class="search-result-item__snippet" v-html="item.snippet"></p>
+                  <div class="search-result-item__meta">
+                    <span>匹配分：{{ formatScore(item.score) }}</span>
+                    <span v-if="item.updatedAt">更新：{{ formatResultDate(item.updatedAt) }}</span>
+                  </div>
+                </li>
+              </ul>
+
+              <div v-if="searchLoading && searchResults.length > 0" class="search-panel__status">
+                <Icon icon="mdi:loading" class="spin" />
+                <p>正在加载更多结果...</p>
+              </div>
+            </div>
+
+            <div class="search-panel__footer" v-if="searchHasMore">
+              <button
+                type="button"
+                class="search-panel__load-more"
+                @click="loadMoreSearchResults"
+                :disabled="searchLoading"
+              >
+                <Icon icon="mdi:chevron-down" />
+                <span>{{ searchLoading ? '加载中...' : '加载更多结果' }}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -183,11 +252,11 @@ import { useDocStore } from '../../../../stores/doc';
 import { useUiStore } from '../../../../stores/ui';
 import { batchUploadDocuments } from '../../../../api/document';
 import { useTreeMenu } from '../../../../composables/useTreeMenu';
+import { useDocumentSearch } from '../../../../composables/useDocumentSearch';
 import TreeNode from '../../../TreeNode.vue';
 import { FILE_SIZE_LIMITS, DOCUMENT_ACCEPT } from '../../../../constants';
 import { createTextFile, extractTitle, validateBatchFile } from '../../../../utils/fileHelpers';
 import { formatBatchUploadResult } from '../../../../utils/uiHelpers';
-import { filterTree } from '../../../../utils/treeHelpers';
 
 // Stores
 const treeStore = useTreeStore();
@@ -199,7 +268,16 @@ const batchInputRef = ref(null);
 const importInputRef = ref(null);
 const currentGroupId = ref(null);
 const uploading = ref(false);
-const searchKeyword = ref('');
+const documentSearch = useDocumentSearch({ debounce: 400, pageSize: 20 });
+const searchKeyword = documentSearch.keyword;
+const isSearchActive = documentSearch.active;
+const searchLoading = documentSearch.loading;
+const searchError = documentSearch.error;
+const searchResults = documentSearch.results;
+const searchHasMore = documentSearch.hasMore;
+const loadMoreSearchResults = documentSearch.loadMore;
+const clearSearch = documentSearch.clear;
+const refreshSearch = documentSearch.refresh;
 const showCreateModal = ref(false);
 const createModalContext = ref({
   parentId: null,
@@ -220,8 +298,6 @@ const {
 } = useTreeMenu();
 
 // 计算属性
-const normalizedKeyword = computed(() => searchKeyword.value.trim().toLowerCase());
-const isSearching = computed(() => normalizedKeyword.value.length > 0);
 const createModalTitle = computed(() =>
   createModalContext.value.parentId
     ? `在「${createModalContext.value.parentName}」下创建`
@@ -292,11 +368,7 @@ const importOptions = computed(() => {
   ];
 });
 
-const tree = computed(() => {
-  return isSearching.value 
-    ? filterTree(treeStore.tree, normalizedKeyword.value, expandedKeys.value, treeStore.expandNode)
-    : treeStore.tree;
-});
+const tree = computed(() => treeStore.tree);
 
 const loading = computed(() => treeStore.loading);
 const error = computed(() => treeStore.error);
@@ -307,9 +379,6 @@ const expandedKeys = computed(() => treeStore.expandedKeys);
 // ===== 根目录菜单操作 =====
 const handleRootOpenCreateModal = handleRootMenuAction(() => openCreateModal());
 const handleRootOpenImportModal = handleRootMenuAction(() => openImportModal());
-
-// ===== 搜索功能 =====
-const clearSearch = () => searchKeyword.value = '';
 
 // ===== 节点操作 =====
 function handleSelect(node, type) {
@@ -325,6 +394,29 @@ function handleToggle(nodeId) {
 
 function handleSelectRoot() {
   treeStore.selectNode(null, null);
+}
+
+function handleSearchResultSelect(item) {
+  if (!item?.id) return;
+  treeStore.selectNode(item.id, 'document');
+  docStore.openDoc(item.id);
+}
+
+function formatScore(score) {
+  if (typeof score !== 'number' || Number.isNaN(score)) {
+    return '--';
+  }
+  const fixed = score < 1 ? 3 : 2;
+  return score.toFixed(fixed);
+}
+
+function formatResultDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleDateString();
 }
 
 function openCreateModal(context = { parentId: null, parentName: '全局文档' }) {
@@ -651,6 +743,187 @@ async function handleBatchFileSelect(event) {
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+.tree-search-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  z-index: 30;
+}
+
+.search-panel {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  background: var(--color-bg-primary);
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.search-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 18px 20px 10px;
+}
+
+.search-panel__eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin: 0 0 4px;
+}
+
+.search-panel__title {
+  margin: 0;
+  font-size: 18px;
+  color: var(--color-text-primary);
+}
+
+.search-panel__close {
+  border: none;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-full);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.search-panel__close:hover {
+  background: var(--color-bg-hover);
+}
+
+.search-panel__body {
+  padding: 0 20px 16px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-panel__status {
+  padding: 24px 12px;
+  border-radius: 12px;
+  background: var(--color-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-top: 24px;
+}
+
+.search-panel__status--error {
+  border: 1px solid rgba(244, 63, 94, 0.2);
+  color: var(--color-danger);
+}
+
+.search-panel__action {
+  margin-top: 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.search-result-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search-result-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(241, 245, 249, 0.85), rgba(255, 255, 255, 0.95));
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.search-result-item:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.search-result-item__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 6px;
+}
+
+.search-result-item__snippet {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.search-result-item__snippet :deep(em) {
+  color: var(--color-primary);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.search-result-item__meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.search-panel__footer {
+  padding: 12px 20px 18px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.search-panel__load-more {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition-fast);
+}
+
+.search-panel__load-more:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .tree-status {
